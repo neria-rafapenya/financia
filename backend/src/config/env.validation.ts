@@ -118,7 +118,11 @@ export function validateEnv(config: Record<string, unknown>) {
   });
 
   if (errors.length > 0) {
-    throw new Error(errors.toString());
+    const formattedErrors = errors
+      .flatMap((error) => Object.values(error.constraints ?? {}))
+      .join(', ');
+
+    throw new Error(`Invalid environment configuration: ${formattedErrors}`);
   }
 
   return validatedConfig;
