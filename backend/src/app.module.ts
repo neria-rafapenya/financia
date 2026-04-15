@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { validateEnv } from './config/env.validation';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { PayersModule } from './modules/payers/payers.module';
@@ -17,7 +19,28 @@ import { LlmModule } from './modules/llm/llm.module';
 import { RulesModule } from './modules/rules/rules.module';
 
 @Module({
-  imports: [AuthModule, UsersModule, PayersModule, IncomesModule, ExpensesModule, RecurringPaymentsModule, DocumentsModule, ContractsModule, TaxModule, AlertsModule, SimulationsModule, OcrModule, LlmModule, RulesModule],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      cache: true,
+      validate: validateEnv,
+      envFilePath: ['.env'],
+    }),
+    AuthModule,
+    UsersModule,
+    PayersModule,
+    IncomesModule,
+    ExpensesModule,
+    RecurringPaymentsModule,
+    DocumentsModule,
+    ContractsModule,
+    TaxModule,
+    AlertsModule,
+    SimulationsModule,
+    OcrModule,
+    LlmModule,
+    RulesModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
