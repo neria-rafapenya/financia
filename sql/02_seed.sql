@@ -99,3 +99,106 @@ ON DUPLICATE KEY UPDATE
   rule_scope = VALUES(rule_scope),
   description = VALUES(description),
   is_active = VALUES(is_active);
+
+INSERT INTO finan_ai_prompts (
+  prompt_code,
+  prompt_scope,
+  provider,
+  document_type,
+  version,
+  name,
+  description,
+  system_prompt,
+  user_prompt_template,
+  output_format,
+  is_active
+)
+VALUES
+  (
+    'DOCUMENT_LLM_CLASSIFIER',
+    'DOCUMENT_LLM',
+    'openai',
+    NULL,
+    'v1',
+    'Prompt clasificador documental',
+    'Prompt para determinar automaticamente el tipo documental a partir del OCR y del nombre del fichero.',
+    'Eres un clasificador documental financiero. Devuelve siempre un JSON objeto valido con las claves: documentType, confidenceSummary y reasoning. documentType debe ser uno de los tipos permitidos recibidos en el contexto.',
+    'Nombre de archivo: {{originalFilename}}\n\nTipo actual declarado: {{currentDocumentType}}\n\nTipos documentales permitidos: {{allowedDocumentTypes}}\n\nTexto OCR:\n{{rawText}}',
+    'json_object',
+    1
+  ),
+  (
+    'DOCUMENT_LLM_DEFAULT',
+    'DOCUMENT_LLM',
+    'openai',
+    NULL,
+    'v1',
+    'Prompt general de interpretacion documental',
+    'Prompt general para interpretar documentos financieros cuando no existe uno especifico por tipo documental.',
+    'Eres un extractor documental financiero. Devuelve siempre un JSON objeto valido con las claves: documentType, summary, extractedFields, detectedIssues y confidenceSummary.',
+    'Tipo documental: {{documentType}}\n\nNombre de archivo: {{originalFilename}}\n\n{{instructionsBlock}}Texto OCR:\n{{rawText}}',
+    'json_object',
+    1
+  ),
+  (
+    'DOCUMENT_LLM_CONTRACT',
+    'DOCUMENT_LLM',
+    'openai',
+    'CONTRACT',
+    'v1',
+    'Prompt de contratos',
+    'Prompt especializado para contratos laborales, mercantiles o de servicios.',
+    'Eres un extractor experto en contratos. Devuelve siempre un JSON objeto valido con las claves: documentType, summary, extractedFields, detectedIssues y confidenceSummary. En extractedFields intenta identificar partes, fechas, tipo de contrato, duracion, salario u honorarios, exclusividad, noCompeteFlag y clausulas relevantes.',
+    'Tipo documental: {{documentType}}\n\nNombre de archivo: {{originalFilename}}\n\n{{instructionsBlock}}Texto OCR:\n{{rawText}}',
+    'json_object',
+    1
+  ),
+  (
+    'DOCUMENT_LLM_PAYSLIP',
+    'DOCUMENT_LLM',
+    'openai',
+    'PAYSLIP',
+    'v1',
+    'Prompt de nominas',
+    'Prompt especializado para nominas y documentos de salario.',
+    'Eres un extractor experto en nominas espanolas. Devuelve siempre un JSON objeto valido con las claves: documentType, summary, extractedFields, detectedIssues y confidenceSummary. En extractedFields intenta identificar empresa, empleado, periodo, grossAmount, netAmount, irpfWithheld, socialSecurityAmount y lineItems.',
+    'Tipo documental: {{documentType}}\n\nNombre de archivo: {{originalFilename}}\n\n{{instructionsBlock}}Texto OCR:\n{{rawText}}',
+    'json_object',
+    1
+  ),
+  (
+    'DOCUMENT_LLM_RECEIPT',
+    'DOCUMENT_LLM',
+    'openai',
+    'RECEIPT',
+    'v1',
+    'Prompt de tickets y justificantes',
+    'Prompt especializado para tickets de compra y justificantes de gasto.',
+    'Eres un extractor experto en tickets y justificantes de compra. Devuelve siempre un JSON objeto valido con las claves: documentType, summary, extractedFields, detectedIssues y confidenceSummary. En extractedFields intenta identificar vendorName, expenseDate, totalAmount, vatAmount, paymentMethod, lineItems y posibles categorias de gasto.',
+    'Tipo documental: {{documentType}}\n\nNombre de archivo: {{originalFilename}}\n\n{{instructionsBlock}}Texto OCR:\n{{rawText}}',
+    'json_object',
+    1
+  ),
+  (
+    'DOCUMENT_LLM_INVOICE',
+    'DOCUMENT_LLM',
+    'openai',
+    'INVOICE',
+    'v1',
+    'Prompt de facturas',
+    'Prompt especializado para facturas emitidas o recibidas.',
+    'Eres un extractor experto en facturas. Devuelve siempre un JSON objeto valido con las claves: documentType, summary, extractedFields, detectedIssues y confidenceSummary. En extractedFields intenta identificar invoiceNumber, issueDate, vendorName, customerName, subtotalAmount, vatAmount, totalAmount, currency y conceptos principales.',
+    'Tipo documental: {{documentType}}\n\nNombre de archivo: {{originalFilename}}\n\n{{instructionsBlock}}Texto OCR:\n{{rawText}}',
+    'json_object',
+    1
+  )
+ON DUPLICATE KEY UPDATE
+  prompt_scope = VALUES(prompt_scope),
+  provider = VALUES(provider),
+  document_type = VALUES(document_type),
+  name = VALUES(name),
+  description = VALUES(description),
+  system_prompt = VALUES(system_prompt),
+  user_prompt_template = VALUES(user_prompt_template),
+  output_format = VALUES(output_format),
+  is_active = VALUES(is_active);

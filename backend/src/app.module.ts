@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validateEnv } from './config/env.validation';
+import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { PayersModule } from './modules/payers/payers.module';
@@ -26,6 +27,7 @@ import { RulesModule } from './modules/rules/rules.module';
       validate: validateEnv,
       envFilePath: ['.env'],
     }),
+    DatabaseModule,
     AuthModule,
     UsersModule,
     PayersModule,

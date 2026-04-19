@@ -32,6 +32,21 @@ CREATE TABLE IF NOT EXISTS finan_user_profiles (
     FOREIGN KEY (user_id) REFERENCES finan_users(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS finan_user_sessions (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  refresh_token_hash VARCHAR(255) NOT NULL,
+  device_info VARCHAR(255) NULL,
+  ip_address VARCHAR(64) NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  revoked_at DATETIME NULL,
+  KEY idx_finan_user_sessions_user_id (user_id),
+  KEY idx_finan_user_sessions_expires_at (expires_at),
+  CONSTRAINT fk_finan_user_sessions_user
+    FOREIGN KEY (user_id) REFERENCES finan_users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS finan_expense_categories (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   code VARCHAR(100) NOT NULL UNIQUE,
@@ -49,6 +64,25 @@ CREATE TABLE IF NOT EXISTS finan_rules (
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS finan_ai_prompts (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  prompt_code VARCHAR(100) NOT NULL,
+  prompt_scope ENUM('DOCUMENT_OCR','DOCUMENT_LLM') NOT NULL,
+  provider VARCHAR(100) NOT NULL,
+  document_type VARCHAR(100) NULL,
+  version VARCHAR(50) NOT NULL,
+  name VARCHAR(255) NOT NULL,
+  description TEXT NULL,
+  system_prompt LONGTEXT NOT NULL,
+  user_prompt_template LONGTEXT NOT NULL,
+  output_format VARCHAR(50) NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_finan_ai_prompts_code_version (prompt_code, version),
+  KEY idx_finan_ai_prompts_lookup (prompt_scope, provider, document_type, is_active)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS finan_payers (
@@ -139,6 +173,7 @@ CREATE TABLE IF NOT EXISTS finan_expenses (
   vendor_name VARCHAR(255) NULL,
   amount DECIMAL(12,2) NOT NULL,
   vat_amount DECIMAL(12,2) NULL,
+  is_paid TINYINT(1) NOT NULL DEFAULT 1,
   currency VARCHAR(10) NOT NULL DEFAULT 'EUR',
   source_type ENUM('MANUAL','OCR','LLM','IMPORT') NOT NULL DEFAULT 'MANUAL',
   deductibility_status ENUM('DEDUCTIBLE','NON_DEDUCTIBLE','REVIEWABLE','UNKNOWN') NOT NULL DEFAULT 'UNKNOWN',

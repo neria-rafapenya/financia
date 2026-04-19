@@ -1,4 +1,12 @@
 import { Module } from '@nestjs/common';
+import { IncomesController } from './incomes.controller';
+import { IncomesService } from './incomes.service';
+import { TaxModule } from '../tax/tax.module';
 
-@Module({})
+@Module({
+  imports: [TaxModule],
+  controllers: [IncomesController],
+  providers: [IncomesService],
+  exports: [IncomesService],
+})
 export class IncomesModule {}

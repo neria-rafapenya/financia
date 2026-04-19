@@ -3,7 +3,7 @@ USE financia;
 INSERT INTO finan_users (email, password_hash, full_name, is_active)
 VALUES (
   'rafa@rafapenya.com',
-  SHA2('JRK441e22', 256),
+  '$2b$12$frQFHS/g1DrSG5rnWWNKi.L2rd9w7AvWedR8IYuTxCYT2KeWrTQK2',
   'Rafa Pena',
   1
 )

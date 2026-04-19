@@ -1,0 +1,726 @@
+{
+    "info": {
+        "name": "FINANCIA API",
+        "_postman_id": "5f4b6b3c-6f71-4f26-97d4-cab5d7f04f01",
+        "description": "Coleccion base para probar autenticacion, CRUD principal y flujo documental de FINANCIA.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:3000/api"
+        },
+        {
+            "key": "accessToken",
+            "value": ""
+        },
+        {
+            "key": "refreshToken",
+            "value": ""
+        },
+        {
+            "key": "payerId",
+            "value": "1"
+        },
+        {
+            "key": "contractId",
+            "value": "1"
+        },
+        {
+            "key": "incomeId",
+            "value": "1"
+        },
+        {
+            "key": "expenseId",
+            "value": "1"
+        },
+        {
+            "key": "recurringPaymentId",
+            "value": "1"
+        },
+        {
+            "key": "documentId",
+            "value": "1"
+        },
+        {
+            "key": "alertId",
+            "value": "1"
+        },
+        {
+            "key": "simulationId",
+            "value": "1"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth",
+            "item": [
+                {
+                    "name": "Register",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"fullName\": \"{{fullName}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/register"
+                    }
+                },
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/login"
+                    }
+                },
+                {
+                    "name": "Refresh",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/refresh"
+                    }
+                },
+                {
+                    "name": "Logout",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+                        },
+                        "url": "{{baseUrl}}/auth/logout"
+                    }
+                },
+                {
+                    "name": "Me",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/auth/me"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Payers",
+            "item": [
+                {
+                    "name": "List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/payers"
+                    }
+                },
+                {
+                    "name": "Create",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"payerName\": \"Tecnologias Plexus S.L.\",\n  \"taxId\": \"B15726177\",\n  \"payerType\": \"EMPLOYER\",\n  \"notes\": \"Pagador principal\"\n}"
+                        },
+                        "url": "{{baseUrl}}/payers"
+                    }
+                },
+                {
+                    "name": "Update",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"notes\": \"Pagador actualizado desde Postman\"\n}"
+                        },
+                        "url": "{{baseUrl}}/payers/{{payerId}}"
+                    }
+                },
+                {
+                    "name": "Delete",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/payers/{{payerId}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Contracts",
+            "item": [
+                {
+                    "name": "List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/contracts"
+                    }
+                },
+                {
+                    "name": "Get By Id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/contracts/{{contractId}}"
+                    }
+                },
+                {
+                    "name": "Create",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"payerId\": {{payerId}},\n  \"contractType\": \"EMPLOYMENT\",\n  \"title\": \"Contrato laboral indefinido\",\n  \"startDate\": \"2026-01-01\",\n  \"grossSalaryMonthly\": 3200,\n  \"netSalaryMonthly\": 2528,\n  \"status\": \"ACTIVE\"\n}"
+                        },
+                        "url": "{{baseUrl}}/contracts"
+                    }
+                },
+                {
+                    "name": "Update",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"notes\": \"Contrato revisado desde Postman\"\n}"
+                        },
+                        "url": "{{baseUrl}}/contracts/{{contractId}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Incomes",
+            "item": [
+                {
+                    "name": "List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/incomes"
+                    }
+                },
+                {
+                    "name": "Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/incomes/summary"
+                    }
+                },
+                {
+                    "name": "Create",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"payerId\": {{payerId}},\n  \"contractId\": {{contractId}},\n  \"incomeType\": \"PAYSLIP\",\n  \"periodYear\": 2026,\n  \"periodMonth\": 4,\n  \"grossAmount\": 3200,\n  \"netAmount\": 2528,\n  \"irpfWithheld\": 410,\n  \"socialSecurityAmount\": 262\n}"
+                        },
+                        "url": "{{baseUrl}}/incomes"
+                    }
+                },
+                {
+                    "name": "Update",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"notes\": \"Nomina ajustada desde Postman\"\n}"
+                        },
+                        "url": "{{baseUrl}}/incomes/{{incomeId}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Expenses",
+            "item": [
+                {
+                    "name": "List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/expenses"
+                    }
+                },
+                {
+                    "name": "Summary",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/expenses/summary"
+                    }
+                },
+                {
+                    "name": "Create",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"expenseDate\": \"2026-04-10\",\n  \"concept\": \"Internet fibra\",\n  \"vendorName\": \"DIGI\",\n  \"amount\": 29.99,\n  \"currency\": \"EUR\",\n  \"sourceType\": \"MANUAL\",\n  \"deductibilityStatus\": \"UNKNOWN\"\n}"
+                        },
+                        "url": "{{baseUrl}}/expenses"
+                    }
+                },
+                {
+                    "name": "Update",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"notes\": \"Gasto revisado desde Postman\"\n}"
+                        },
+                        "url": "{{baseUrl}}/expenses/{{expenseId}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Recurring Payments",
+            "item": [
+                {
+                    "name": "List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/recurring-payments"
+                    }
+                },
+                {
+                    "name": "Create",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Alquiler\",\n  \"amount\": 850,\n  \"frequency\": \"MONTHLY\",\n  \"nextDueDate\": \"2026-05-01\",\n  \"isActive\": true,\n  \"deductibilityStatus\": \"NON_DEDUCTIBLE\"\n}"
+                        },
+                        "url": "{{baseUrl}}/recurring-payments"
+                    }
+                },
+                {
+                    "name": "Update",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"notes\": \"Pago periodico revisado desde Postman\"\n}"
+                        },
+                        "url": "{{baseUrl}}/recurring-payments/{{recurringPaymentId}}"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Documents",
+            "item": [
+                {
+                    "name": "Upload",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "documentType",
+                                    "value": "PAYSLIP",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "documentDate",
+                                    "value": "2026-04-01",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "notes",
+                                    "value": "Documento subido desde Postman",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": ""
+                                }
+                            ]
+                        },
+                        "url": "{{baseUrl}}/documents/upload"
+                    }
+                },
+                {
+                    "name": "List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/documents"
+                    }
+                },
+                {
+                    "name": "Get By Id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/documents/{{documentId}}"
+                    }
+                },
+                {
+                    "name": "Process OCR",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"ocrProvider\": \"tesseract\"\n}"
+                        },
+                        "url": "{{baseUrl}}/documents/{{documentId}}/process-ocr"
+                    }
+                },
+                {
+                    "name": "Process LLM",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"llmProvider\": \"openai\"\n}"
+                        },
+                        "url": "{{baseUrl}}/documents/{{documentId}}/process-llm"
+                    }
+                },
+                {
+                    "name": "Verify",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"notes\": \"Documento validado desde Postman\",\n  \"fieldValues\": [\n    {\n      \"fieldName\": \"gross_amount\",\n      \"fieldValue\": \"3200.00\",\n      \"source\": \"LLM\",\n      \"confidenceLevel\": \"HIGH\",\n      \"isVerified\": true\n    }\n  ]\n}"
+                        },
+                        "url": "{{baseUrl}}/documents/{{documentId}}/verify"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Alerts",
+            "item": [
+                {
+                    "name": "List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/alerts"
+                    }
+                },
+                {
+                    "name": "Read",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/alerts/{{alertId}}/read"
+                    }
+                },
+                {
+                    "name": "Resolve",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/alerts/{{alertId}}/resolve"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Simulations",
+            "item": [
+                {
+                    "name": "List",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/simulations"
+                    }
+                },
+                {
+                    "name": "Get By Id",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            }
+                        ],
+                        "url": "{{baseUrl}}/simulations/{{simulationId}}"
+                    }
+                },
+                {
+                    "name": "Create",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{accessToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Cambio retencion junio\",\n  \"simulationType\": \"RETENTION_CHANGE\",\n  \"inputPayload\": {\n    \"currentRetention\": 12,\n    \"newRetention\": 15\n  }\n}"
+                        },
+                        "url": "{{baseUrl}}/simulations"
+                    }
+                }
+            ]
+        }
+    ]
+}
