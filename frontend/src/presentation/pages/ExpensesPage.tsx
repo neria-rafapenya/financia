@@ -13,6 +13,7 @@ import { ExpensesRepository } from "@/infrastructure/repositories/ExpensesReposi
 import { RecurringPaymentsRepository } from "@/infrastructure/repositories/RecurringPaymentsRepository";
 import { LoadingPanel } from "@/presentation/components/LoadingPanel";
 import { PageHero } from "@/presentation/components/PageHero";
+import { FormFieldInfo } from "@/shared/components/FormFieldInfo";
 
 const expensesService = new ExpensesService(new ExpensesRepository());
 const recurringPaymentsService = new RecurringPaymentsService(
@@ -370,6 +371,7 @@ export function ExpensesPage() {
               <div className="col-12 col-sm-auto">
                 <label className="form-label mb-1" htmlFor="expenses-year">
                   Año
+                  <FormFieldInfo text="Ejercicio fiscal sobre el que quieres consultar gastos." />
                 </label>
                 <select
                   id="expenses-year"
@@ -390,6 +392,7 @@ export function ExpensesPage() {
               <div className="col-12 col-sm-auto">
                 <label className="form-label mb-1" htmlFor="expenses-month">
                   Mes
+                  <FormFieldInfo text="Mes concreto del ejercicio para acotar el listado y los totales." />
                 </label>
                 <select
                   id="expenses-month"
@@ -470,6 +473,7 @@ export function ExpensesPage() {
               <div className="col-md-3">
                 <label className="form-label" htmlFor="expense-date">
                   Fecha
+                  <FormFieldInfo text="Fecha efectiva del gasto manual que estás registrando." />
                 </label>
                 <input
                   id="expense-date"
@@ -489,12 +493,13 @@ export function ExpensesPage() {
               <div className="col-md-5">
                 <label className="form-label" htmlFor="expense-concept">
                   Concepto
+                  <FormFieldInfo text="Descripción breve y reconocible del gasto para listados, filtros y revisión posterior." />
                 </label>
                 <input
                   id="expense-concept"
                   className="form-control"
                   type="text"
-                  placeholder="Ej. alquiler despacho, Canva, dominio web"
+                  placeholder="Ej. suscripcion Netflix"
                   value={formState.concept}
                   onChange={(event) =>
                     setFormState((currentState) => ({
@@ -509,6 +514,7 @@ export function ExpensesPage() {
               <div className="col-md-4">
                 <label className="form-label" htmlFor="expense-vendor-name">
                   Proveedor o contraparte
+                  <FormFieldInfo text="Empresa o persona relacionada con el gasto. Puede dejarse vacío si no aplica." />
                 </label>
                 <input
                   id="expense-vendor-name"
@@ -528,6 +534,7 @@ export function ExpensesPage() {
               <div className="col-md-3">
                 <label className="form-label" htmlFor="expense-amount">
                   Importe total
+                  <FormFieldInfo text="Importe total del gasto. Debe ser un número mayor que cero." />
                 </label>
                 <input
                   id="expense-amount"
@@ -551,6 +558,7 @@ export function ExpensesPage() {
               <div className="col-md-3">
                 <label className="form-label" htmlFor="expense-vat-amount">
                   IVA soportado
+                  <FormFieldInfo text="Importe de IVA asociado al gasto, si existe y quieres registrarlo separadamente." />
                 </label>
                 <input
                   id="expense-vat-amount"
@@ -573,6 +581,7 @@ export function ExpensesPage() {
               <div className="col-md-3">
                 <label className="form-label" htmlFor="expense-deductibility">
                   Estado fiscal
+                  <FormFieldInfo text="Clasificación fiscal del gasto: deducible, no deducible, revisable o pendiente." />
                 </label>
                 <select
                   id="expense-deductibility"
@@ -597,6 +606,7 @@ export function ExpensesPage() {
               <div className="col-md-3">
                 <label className="form-label" htmlFor="expense-business-use">
                   Uso profesional (%)
+                  <FormFieldInfo text="Porcentaje del gasto que corresponde realmente a tu actividad profesional." />
                 </label>
                 <input
                   id="expense-business-use"
@@ -618,6 +628,7 @@ export function ExpensesPage() {
               <div className="col-12">
                 <label className="form-label" htmlFor="expense-notes">
                   Notas
+                  <FormFieldInfo text="Información adicional para justificar o revisar el gasto más adelante." />
                 </label>
                 <textarea
                   id="expense-notes"
@@ -688,6 +699,7 @@ export function ExpensesPage() {
                   <div className="col-md-4">
                     <label className="form-label" htmlFor="recurring-frequency">
                       Frecuencia
+                      <FormFieldInfo text="Periodicidad con la que se repetirá este gasto si lo conviertes en pago periódico." />
                     </label>
                     <select
                       id="recurring-frequency"
@@ -715,6 +727,7 @@ export function ExpensesPage() {
                       htmlFor="recurring-next-due-date"
                     >
                       Próximo cargo previsto
+                      <FormFieldInfo text="Fecha estimada del siguiente cargo automático del gasto recurrente." />
                     </label>
                     <input
                       id="recurring-next-due-date"
@@ -733,6 +746,7 @@ export function ExpensesPage() {
                   <div className="col-md-4">
                     <label className="form-label" htmlFor="recurring-notes">
                       Nota del pago periódico
+                      <FormFieldInfo text="Comentario opcional específico para el registro recurrente de este gasto." />
                     </label>
                     <input
                       id="recurring-notes"

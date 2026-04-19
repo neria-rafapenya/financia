@@ -4,6 +4,7 @@ import type { TaxPeriodOverview } from "@/domain/interfaces/tax.interface";
 import { TaxRepository } from "@/infrastructure/repositories/TaxRepository";
 import { LoadingPanel } from "@/presentation/components/LoadingPanel";
 import { PageHero } from "@/presentation/components/PageHero";
+import { FormFieldInfo } from "@/shared/components/FormFieldInfo";
 
 const taxService = new TaxService(new TaxRepository());
 
@@ -165,6 +166,7 @@ export function TaxesPage() {
             <div className="col-12 col-sm-auto">
               <label className="form-label mb-1" htmlFor="tax-year">
                 Año
+                <FormFieldInfo text="Ejercicio fiscal para el que se calculan y muestran las obligaciones tributarias." />
               </label>
               <select
                 id="tax-year"
@@ -183,6 +185,7 @@ export function TaxesPage() {
             <div className="col-12 col-sm-auto">
               <label className="form-label mb-1" htmlFor="tax-month">
                 Mes
+                <FormFieldInfo text="Mes dentro del ejercicio para centrar el detalle de fiscalidad en un período concreto." />
               </label>
               <select
                 id="tax-month"

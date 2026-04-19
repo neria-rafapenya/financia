@@ -119,6 +119,9 @@ const spanishMonthLabels = [
   'diciembre',
 ];
 
+const LOW_CONFIDENCE_DOCUMENT_MESSAGE =
+  'El documento no se ha podido procesar con suficiente fiabilidad. Puede deberse a baja calidad, desenfoque o una orientación incorrecta. Gíralo y vuelve a intentarlo.';
+
 @Injectable()
 export class DocumentsService {
   constructor(
@@ -349,9 +352,16 @@ export class DocumentsService {
     },
     uploadDocumentDto: UploadDocumentDto,
   ) {
+    const preparedFile = await this.documentStorageService.prepareUploadedFile(
+      file,
+      {
+        manualRotationDegrees: uploadDocumentDto.manualRotationDegrees,
+      },
+    );
+
     const storedFile = await this.documentStorageService.saveUploadedFile(
       userId,
-      file,
+      preparedFile,
     );
 
     const result = await this.databaseService.execute(
@@ -420,6 +430,7 @@ export class DocumentsService {
       linkedEntityType: processDocumentPipelineDto.linkedEntityType,
       linkedEntityId: processDocumentPipelineDto.linkedEntityId,
       notes: processDocumentPipelineDto.notes,
+      manualRotationDegrees: processDocumentPipelineDto.manualRotationDegrees,
     });
 
     await this.processOcr(userId, uploadedDocument.id, {
@@ -1035,9 +1046,9 @@ export class DocumentsService {
       if (typeof value === 'string') {
         const normalizedValue = value
           .trim()
-          .replaceAll(/\s+/g, '')
+          .replace(/\s+/g, '')
           .replaceAll('€', '')
-          .replaceAll(/\.(?=\d{3}(?:\D|$))/g, '')
+          .replace(/\.(?=\d{3}(?:\D|$))/g, '')
           .replace(',', '.');
         const parsedValue = Number(normalizedValue);
 
@@ -1834,16 +1845,13 @@ export class DocumentsService {
       return;
     }
 
-    throw new UnprocessableEntityException(
-      'El documento no puede ser procesado debido a su calidad.',
-    );
+    throw new UnprocessableEntityException(LOW_CONFIDENCE_DOCUMENT_MESSAGE);
   }
 
   private isLowConfidenceDocumentError(error: unknown) {
     return (
       error instanceof UnprocessableEntityException &&
-      error.message ===
-        'El documento no puede ser procesado debido a su calidad.'
+      error.message === LOW_CONFIDENCE_DOCUMENT_MESSAGE
     );
   }
 

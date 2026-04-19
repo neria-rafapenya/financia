@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PDFParse } from 'pdf-parse';
+import sharp from 'sharp';
 import Tesseract from 'tesseract.js';
 
 interface DocumentForAi {
@@ -41,6 +42,16 @@ const supportedDocumentTypes = new Set([
   'SCREENSHOT',
   'OTHER',
 ]);
+
+const OCR_ROTATION_STEPS = [0, 90, 180, 270] as const;
+const MIN_MEANINGFUL_OCR_SCORE = 80;
+const TESSERACT_RETRY_CONFIDENCE_THRESHOLD = 55;
+
+interface OcrAttemptResult {
+  rawText: string;
+  confidenceScore: number | null;
+  score: number;
+}
 
 @Injectable()
 export class DocumentAiService {
@@ -99,13 +110,7 @@ export class DocumentAiService {
       );
     }
 
-    const result = await Tesseract.recognize(params.fileBuffer, 'spa+eng');
-
-    return {
-      ocrProvider: 'tesseract',
-      rawText: result.data.text.trim(),
-      confidenceScore: Number(result.data.confidence.toFixed(2)),
-    };
+    return this.extractTextWithTesseract(params.fileBuffer);
   }
 
   async interpretDocument(params: {
@@ -233,6 +238,48 @@ export class DocumentAiService {
       );
     }
 
+    const baseBuffer = await this.prepareImageForOpenAi(fileBuffer);
+    const rotatedBuffers = await this.buildRotatedImageVariants(baseBuffer);
+    const firstAttempt = await this.extractTextWithOpenAiOnce(
+      document,
+      rotatedBuffers[0],
+    );
+
+    if (!this.shouldRetryOpenAiOcr(firstAttempt.rawText)) {
+      return firstAttempt;
+    }
+
+    let bestAttempt = {
+      ...firstAttempt,
+      score: this.scoreOpenAiAttempt(firstAttempt.rawText),
+    };
+
+    for (const rotatedBuffer of rotatedBuffers.slice(1)) {
+      const candidateAttempt = await this.extractTextWithOpenAiOnce(
+        document,
+        rotatedBuffer,
+      );
+      const candidateScore = this.scoreOpenAiAttempt(candidateAttempt.rawText);
+
+      if (candidateScore > bestAttempt.score) {
+        bestAttempt = {
+          ...candidateAttempt,
+          score: candidateScore,
+        };
+      }
+    }
+
+    return {
+      ocrProvider: 'openai',
+      rawText: bestAttempt.rawText,
+      confidenceScore: null,
+    };
+  }
+
+  private async extractTextWithOpenAiOnce(
+    document: DocumentForAi,
+    fileBuffer: Buffer,
+  ) {
     const payload = {
       model: this.configService.get<string>('OPENAI_MODEL', 'gpt-4.1-mini'),
       temperature: 0,
@@ -274,6 +321,101 @@ export class DocumentAiService {
       rawText,
       confidenceScore: null,
     };
+  }
+
+  private async extractTextWithTesseract(fileBuffer: Buffer) {
+    const baseBuffer = await this.prepareImageForTesseract(fileBuffer);
+    const rotatedBuffers = await this.buildRotatedImageVariants(baseBuffer);
+    let bestAttempt: OcrAttemptResult | null = null;
+
+    for (const [index, rotatedBuffer] of rotatedBuffers.entries()) {
+      const result = await Tesseract.recognize(rotatedBuffer, 'spa+eng');
+      const rawText = result.data.text.trim();
+      const confidenceScore = Number(result.data.confidence.toFixed(2));
+      const candidateAttempt = {
+        rawText,
+        confidenceScore,
+        score: this.scoreTesseractAttempt(rawText, confidenceScore),
+      } satisfies OcrAttemptResult;
+
+      if (!bestAttempt || candidateAttempt.score > bestAttempt.score) {
+        bestAttempt = candidateAttempt;
+      }
+
+      if (
+        index === 0 &&
+        !this.shouldRetryTesseractOcr(rawText, confidenceScore)
+      ) {
+        break;
+      }
+    }
+
+    return {
+      ocrProvider: 'tesseract',
+      rawText: bestAttempt?.rawText ?? '',
+      confidenceScore: bestAttempt?.confidenceScore ?? null,
+    };
+  }
+
+  private async prepareImageForOpenAi(fileBuffer: Buffer) {
+    return sharp(fileBuffer, { failOn: 'none' }).rotate().png().toBuffer();
+  }
+
+  private async prepareImageForTesseract(fileBuffer: Buffer) {
+    return sharp(fileBuffer, { failOn: 'none' })
+      .rotate()
+      .grayscale()
+      .normalize()
+      .sharpen()
+      .png()
+      .toBuffer();
+  }
+
+  private async buildRotatedImageVariants(fileBuffer: Buffer) {
+    const variants: Buffer[] = [fileBuffer];
+
+    for (const rotationStep of OCR_ROTATION_STEPS.slice(1)) {
+      variants.push(
+        await sharp(fileBuffer, { failOn: 'none' })
+          .rotate(rotationStep)
+          .png()
+          .toBuffer(),
+      );
+    }
+
+    return variants;
+  }
+
+  private shouldRetryOpenAiOcr(rawText: string) {
+    return this.scoreOpenAiAttempt(rawText) < MIN_MEANINGFUL_OCR_SCORE;
+  }
+
+  private shouldRetryTesseractOcr(
+    rawText: string,
+    confidenceScore: number | null,
+  ) {
+    return (
+      (confidenceScore ?? 0) < TESSERACT_RETRY_CONFIDENCE_THRESHOLD ||
+      this.scoreOpenAiAttempt(rawText) < MIN_MEANINGFUL_OCR_SCORE
+    );
+  }
+
+  private scoreOpenAiAttempt(rawText: string) {
+    const normalizedText = rawText.split(/\s+/).filter(Boolean).join(' ');
+
+    if (!normalizedText) {
+      return 0;
+    }
+
+    const tokenCount = normalizedText.split(' ').filter(Boolean).length;
+    return normalizedText.length + tokenCount * 4;
+  }
+
+  private scoreTesseractAttempt(
+    rawText: string,
+    confidenceScore: number | null,
+  ) {
+    return (confidenceScore ?? 0) * 10 + this.scoreOpenAiAttempt(rawText);
   }
 
   private async interpretWithOpenAi(params: {

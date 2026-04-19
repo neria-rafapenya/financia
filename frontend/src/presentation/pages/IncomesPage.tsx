@@ -7,6 +7,7 @@ import type {
 import { IncomesRepository } from "@/infrastructure/repositories/IncomesRepository";
 import { LoadingPanel } from "@/presentation/components/LoadingPanel";
 import { PageHero } from "@/presentation/components/PageHero";
+import { FormFieldInfo } from "@/shared/components/FormFieldInfo";
 
 const incomesService = new IncomesService(new IncomesRepository());
 
@@ -207,6 +208,7 @@ export function IncomesPage() {
               <div className="col-12 col-sm-auto">
                 <label className="form-label mb-1" htmlFor="incomes-year">
                   Año
+                  <FormFieldInfo text="Ejercicio fiscal sobre el que quieres consultar los ingresos." />
                 </label>
                 <select
                   id="incomes-year"
@@ -227,6 +229,7 @@ export function IncomesPage() {
               <div className="col-12 col-sm-auto">
                 <label className="form-label mb-1" htmlFor="incomes-month">
                   Mes
+                  <FormFieldInfo text="Mes concreto del ejercicio para filtrar el listado de ingresos." />
                 </label>
                 <select
                   id="incomes-month"

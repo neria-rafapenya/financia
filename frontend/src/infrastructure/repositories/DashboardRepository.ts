@@ -4,19 +4,13 @@ import type {
   IncomeTotals,
 } from "@/domain/interfaces/dashboard.interface";
 import type { DocumentRecord } from "@/domain/interfaces/document.interface";
+import type { ExpensePeriodOverview } from "@/domain/interfaces/expense.interface";
+import type { IncomePeriodOverview } from "@/domain/interfaces/income.interface";
 import type { User } from "@/domain/interfaces/user.interface";
 import { fetchWithAuth } from "@/shared/api/api";
 
 interface AuthMeResponse {
   user: User;
-}
-
-interface IncomeSummaryResponse {
-  totals: IncomeTotals;
-}
-
-interface ExpenseSummaryResponse {
-  totals: ExpenseTotals;
 }
 
 export class DashboardRepository {
@@ -26,15 +20,31 @@ export class DashboardRepository {
     );
   }
 
-  getIncomeSummary() {
-    return fetchWithAuth<IncomeSummaryResponse>("/incomes/summary").then(
-      (response) => response.totals,
+  getIncomeOverview(year: number) {
+    return fetchWithAuth<IncomePeriodOverview>(
+      `/incomes/period?year=${year}`,
+    ).then(
+      (response) =>
+        ({
+          totalGrossAmount: response.totals.totalGrossAmount,
+          totalNetAmount: response.totals.totalNetAmount,
+          totalIrpfWithheld: response.totals.totalIrpfWithheld,
+          totalSocialSecurityAmount: response.totals.totalSocialSecurityAmount,
+          recordCount: response.totals.recordCount,
+        }) satisfies IncomeTotals,
     );
   }
 
-  getExpenseSummary() {
-    return fetchWithAuth<ExpenseSummaryResponse>("/expenses/summary").then(
-      (response) => response.totals,
+  getExpenseOverview(year: number) {
+    return fetchWithAuth<ExpensePeriodOverview>(
+      `/expenses/period?year=${year}`,
+    ).then(
+      (response) =>
+        ({
+          totalAmount: response.totals.totalAmount,
+          totalVatAmount: response.totals.totalVatAmount,
+          recordCount: response.totals.recordCount,
+        }) satisfies ExpenseTotals,
     );
   }
 

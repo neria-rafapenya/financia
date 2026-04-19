@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   IsDateString,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -41,4 +42,9 @@ export class UploadDocumentDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn([0, 90, 180, 270])
+  manualRotationDegrees?: number;
 }

@@ -3,6 +3,7 @@ import {
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsNumber,
   IsOptional,
   IsString,
@@ -54,6 +55,11 @@ export class ProcessDocumentPipelineDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn([0, 90, 180, 270])
+  manualRotationDegrees?: number;
 
   @IsOptional()
   @IsString()

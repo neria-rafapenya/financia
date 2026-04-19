@@ -5,15 +5,17 @@ export class DashboardService {
   constructor(private readonly repository: DashboardRepository) {}
 
   async loadOverview(): Promise<DashboardOverview> {
+    const currentYear = new Date().getFullYear();
     const [user, incomes, expenses, alerts, documents] = await Promise.all([
       this.repository.getCurrentUser(),
-      this.repository.getIncomeSummary(),
-      this.repository.getExpenseSummary(),
+      this.repository.getIncomeOverview(currentYear),
+      this.repository.getExpenseOverview(currentYear),
       this.repository.getAlerts(),
       this.repository.getDocuments(),
     ]);
 
     return {
+      currentYear,
       user,
       incomes,
       expenses,

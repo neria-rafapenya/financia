@@ -5,6 +5,7 @@ import {
   type ChangeEvent,
   type DragEvent,
   type FormEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { Link, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
@@ -17,8 +18,15 @@ import {
   getDocumentFieldLabel,
   getDocumentTypeLabel,
 } from "@/domain/interfaces/document.interface";
+import { DocumentRepositoryLinkIcon } from "@/presentation/components/DocumentRepositoryLinkIcon";
 import { DocumentProcessingOverlay } from "@/presentation/components/DocumentProcessingOverlay";
 import { PageHero } from "@/presentation/components/PageHero";
+import {
+  DOCUMENT_IMAGE_OPTIMIZATION_THRESHOLD_BYTES,
+  DOCUMENT_UPLOAD_RAW_MAX_FILE_SIZE_BYTES,
+  formatDocumentFileSize,
+} from "@/shared/config/documents";
+import { FormFieldInfo } from "@/shared/components/FormFieldInfo";
 
 const AUTO_DOCUMENT_TYPE = "AUTO";
 const ACCEPTED_DOCUMENT_EXTENSIONS = [
@@ -34,6 +42,21 @@ const ACCEPTED_DOCUMENT_EXTENSIONS = [
   ".csv",
 ] as const;
 const DOCUMENT_ACCEPT_ATTRIBUTE = ACCEPTED_DOCUMENT_EXTENSIONS.join(",");
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <path
+        d="M11.7 1.3a1 1 0 0 1 1.4 0l1.6 1.6a1 1 0 0 1 0 1.4l-8.8 8.8-3.4.6.6-3.4 8.6-9zM10.3 2.7 4 9l-.3 1.7 1.7-.3 6.3-6.3-1.4-1.4z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+function isKeyboardEditTrigger(event: ReactKeyboardEvent<HTMLButtonElement>) {
+  return event.key === "Enter" || event.key === " ";
+}
 
 function toMarkdownLabel(value: string) {
   return value
@@ -227,6 +250,13 @@ function validateSelectedFiles(files: FileList | File[]) {
   const [candidateFile] = Array.from(files);
   const extension = getFileExtension(candidateFile.name);
 
+  if (candidateFile.size > DOCUMENT_UPLOAD_RAW_MAX_FILE_SIZE_BYTES) {
+    return {
+      file: null,
+      error: `El archivo supera el tamaño máximo de subida de ${formatDocumentFileSize(DOCUMENT_UPLOAD_RAW_MAX_FILE_SIZE_BYTES)}. Reduce su peso antes de volver a intentarlo.`,
+    };
+  }
+
   if (!ACCEPTED_DOCUMENT_EXTENSIONS.includes(extension as never)) {
     return {
       file: null,
@@ -241,6 +271,47 @@ function validateSelectedFiles(files: FileList | File[]) {
   };
 }
 
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return "No disponible";
+  }
+
+  return new Intl.DateTimeFormat("es-ES", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function getDocumentYearHint(document: DocumentRecord | null) {
+  if (!document) {
+    return null;
+  }
+
+  const isExpenseDocument =
+    document.documentType === "INVOICE" || document.documentType === "RECEIPT";
+  const isProcessedDocument =
+    document.status === "LLM_PROCESSED" || document.status === "VERIFIED";
+
+  if (!isExpenseDocument || !isProcessedDocument || !document.documentDate) {
+    return null;
+  }
+
+  const documentYear = Number(document.documentDate.slice(0, 4));
+  const currentYear = new Date().getFullYear();
+
+  if (!Number.isFinite(documentYear) || documentYear === currentYear) {
+    return null;
+  }
+
+  return {
+    documentYear,
+    currentYear,
+  };
+}
+
 export function DocumentsPage() {
   const {
     documents,
@@ -249,6 +320,7 @@ export function DocumentsPage() {
     isAnalyzing,
     error,
     selectDocument,
+    updateDocument,
     uploadAndAnalyzeDocument,
     getDocumentFileBlob,
   } = useDocuments();
@@ -263,6 +335,7 @@ export function DocumentsPage() {
   const [documentDate, setDocumentDate] = useState("");
   const [notes, setNotes] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [manualRotationDegrees, setManualRotationDegrees] = useState(0);
   const [shouldScrollToInterpretation, setShouldScrollToInterpretation] =
     useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
@@ -271,6 +344,10 @@ export function DocumentsPage() {
     null,
   );
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [editingDocumentId, setEditingDocumentId] = useState<number | null>(
+    null,
+  );
+  const [editingName, setEditingName] = useState("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const llmSectionRef = useRef<HTMLElement | null>(null);
 
@@ -283,6 +360,11 @@ export function DocumentsPage() {
   const isImageDocument =
     selectedDocument?.mimeType.startsWith("image/") ?? false;
   const shouldShowImagePreview = isDetailPage && isImageDocument;
+  const isSelectedImageFile = file?.type.startsWith("image/") ?? false;
+  const shouldOptimizeSelectedImage =
+    (file?.size ?? 0) > DOCUMENT_IMAGE_OPTIMIZATION_THRESHOLD_BYTES &&
+    isSelectedImageFile;
+  const documentYearHint = getDocumentYearHint(selectedDocument);
 
   useEffect(() => {
     if (!shouldScrollToInterpretation || !selectedDocument) {
@@ -379,6 +461,15 @@ export function DocumentsPage() {
   }, [shouldShowImagePreview]);
 
   useEffect(() => {
+    if (editingDocumentId === selectedDocument?.id) {
+      return;
+    }
+
+    setEditingDocumentId(null);
+    setEditingName("");
+  }, [editingDocumentId, selectedDocument]);
+
+  useEffect(() => {
     if (!isPreviewModalOpen) {
       return;
     }
@@ -401,10 +492,20 @@ export function DocumentsPage() {
 
     setUploadValidationError(validation.error);
     setFile(validation.file);
+    setManualRotationDegrees(0);
 
     if (!validation.file && fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  const handleRotateSelectedImage = (
+    event: React.MouseEvent<HTMLButtonElement>,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    setManualRotationDegrees((currentValue) => (currentValue + 90) % 360);
   };
 
   const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -452,6 +553,9 @@ export function DocumentsPage() {
       notes: notes || undefined,
       instructions: instructions || undefined,
       autoDetectDocumentType: documentType === AUTO_DOCUMENT_TYPE,
+      manualRotationDegrees: isSelectedImageFile
+        ? manualRotationDegrees
+        : undefined,
     });
 
     if (detail) {
@@ -462,10 +566,55 @@ export function DocumentsPage() {
       setDocumentDate("");
       setNotes("");
       setInstructions("");
+      setManualRotationDegrees(0);
 
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const startEditingDocument = (document: DocumentRecord) => {
+    setEditingDocumentId(document.id);
+    setEditingName(document.displayName);
+  };
+
+  const cancelEditingDocument = () => {
+    setEditingDocumentId(null);
+    setEditingName("");
+  };
+
+  const handleSaveDocumentName = async (document: DocumentRecord) => {
+    const nextName = editingName.trim();
+
+    if (!nextName || nextName === document.displayName) {
+      cancelEditingDocument();
+      return;
+    }
+
+    const updatedDocument = await updateDocument({
+      documentId: document.id,
+      displayLabel: nextName,
+    });
+
+    if (updatedDocument) {
+      cancelEditingDocument();
+    }
+  };
+
+  const handleEditingNameKeyDown = async (
+    event: ReactKeyboardEvent<HTMLInputElement>,
+    document: DocumentRecord,
+  ) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      await handleSaveDocumentName(document);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelEditingDocument();
     }
   };
 
@@ -475,9 +624,93 @@ export function DocumentsPage() {
         <div className="col-12 col-md-6">
           <div className="border rounded-3 p-3 h-100 bg-light-subtle">
             <div className="small text-secondary mb-1">Referencia</div>
-            <strong>{selectedDocument.displayName}</strong>
+            <div className="small text-secondary fst-italic mb-2">
+              * El título de referencia se puede editar.
+            </div>
+            {editingDocumentId === selectedDocument.id ? (
+              <div className="d-flex flex-column gap-2">
+                <input
+                  type="text"
+                  className="form-control form-control-sm"
+                  value={editingName}
+                  onChange={(event) => setEditingName(event.target.value)}
+                  onKeyDown={(event) =>
+                    void handleEditingNameKeyDown(event, selectedDocument)
+                  }
+                  onBlur={() => {
+                    void handleSaveDocumentName(selectedDocument);
+                  }}
+                  maxLength={255}
+                  autoFocus
+                />
+                <div className="d-flex gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-dark btn-sm"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                    }}
+                    onClick={() =>
+                      void handleSaveDocumentName(selectedDocument)
+                    }
+                    disabled={isSubmitting}
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                    }}
+                    onClick={cancelEditingDocument}
+                    disabled={isSubmitting}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="document-file-trigger">
+                <button
+                  type="button"
+                  className="document-file-trigger__label"
+                  onDoubleClick={() => startEditingDocument(selectedDocument)}
+                  onKeyDown={(event) => {
+                    if (!isKeyboardEditTrigger(event)) {
+                      return;
+                    }
+
+                    event.preventDefault();
+                    startEditingDocument(selectedDocument);
+                  }}
+                  title="Doble clic para editar el label"
+                  aria-label={`Editar label de ${selectedDocument.displayName}`}
+                >
+                  <strong className="d-block">
+                    {selectedDocument.displayName}
+                  </strong>
+                  <small className="text-secondary d-block">
+                    {selectedDocument.originalFilename}
+                  </small>
+                </button>
+                <button
+                  type="button"
+                  className="document-file-trigger__edit"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    startEditingDocument(selectedDocument);
+                  }}
+                  title="Editar nombre"
+                  aria-label={`Editar nombre de ${selectedDocument.displayName}`}
+                >
+                  <EditIcon />
+                </button>
+              </div>
+            )}
             <div className="small text-secondary mt-2">
-              {selectedDocument.originalFilename}
+              Fecha y hora de subida:{" "}
+              {formatDateTime(selectedDocument.createdAt)}
             </div>
           </div>
         </div>
@@ -488,6 +721,22 @@ export function DocumentsPage() {
             <div className="small text-secondary mt-2">
               {selectedDocument.documentDate ?? "Sin fecha documental"}
             </div>
+            <div className="small text-secondary mt-2">
+              Fecha y hora de procesado LLM:{" "}
+              {formatDateTime(latestLlmResult?.processedAt ?? null)}
+            </div>
+            {documentYearHint ? (
+              <div className="documents-year-hint mt-3" role="note">
+                <strong>Impacto en otro ejercicio</strong>
+                <p className="mb-0">
+                  Este documento se imputa como gasto del ejercicio{" "}
+                  <strong>{documentYearHint.documentYear}</strong>. No lo verás
+                  en Gastos ni en el dashboard del ejercicio{" "}
+                  <strong>{documentYearHint.currentYear}</strong> salvo que
+                  cambies el filtro de año.
+                </p>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -605,11 +854,7 @@ export function DocumentsPage() {
         </div>
       </div>
     </div>
-  ) : (
-    <p className="mb-0 text-secondary">
-      Selecciona un documento para ver su detalle completo.
-    </p>
-  );
+  ) : null;
 
   if (isDetailPage) {
     return (
@@ -698,178 +943,263 @@ export function DocumentsPage() {
         meta="OCR + LLM"
       />
 
-      <section className="card border-0 shadow-sm">
-        <div className="card-body p-4">
-          <div className="d-flex justify-content-between align-items-center gap-3 mb-4">
-            <div>
-              <h2 className="h4 mb-1">Nueva carga documental</h2>
-              <p className="text-secondary mb-0">
-                La carga ejecuta OCR y después interpreta el documento con
-                clasificación automática cuando el tipo se deja en modo auto.
-              </p>
+      <section className="row g-4 align-items-start">
+        <div className="col-12 col-md-8">
+          <div className="d-grid gap-4">
+            <div className="card border-0 shadow-sm">
+              <div className="card-body p-4">
+                <div className="d-flex justify-content-between align-items-center gap-3 mb-4">
+                  <div>
+                    <h2 className="h4 mb-1">Nueva carga documental</h2>
+                    <p className="text-secondary mb-0">
+                      La carga ejecuta OCR y después interpreta el documento con
+                      clasificación automática cuando el tipo se deja en modo
+                      auto.
+                    </p>
+                  </div>
+                  <div className="text-end">
+                    <span className="badge text-bg-light border">
+                      OCR + LLM
+                    </span>
+                  </div>
+                </div>
+
+                <form className="row g-3" onSubmit={handleSubmit}>
+                  <div className="col-12 col-lg-6">
+                    <label
+                      className="form-label"
+                      htmlFor="document-upload-file"
+                    >
+                      Archivo
+                    </label>
+                    <label
+                      htmlFor="document-upload-file"
+                      className={`documents-dropzone ${isDragActive ? "documents-dropzone--active" : ""} ${uploadValidationError ? "documents-dropzone--error" : ""}`}
+                      onDrop={handleDrop}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                    >
+                      <input
+                        id="document-upload-file"
+                        ref={fileInputRef}
+                        type="file"
+                        className="documents-dropzone__input"
+                        accept={DOCUMENT_ACCEPT_ATTRIBUTE}
+                        onChange={handleFileInputChange}
+                        aria-invalid={uploadValidationError ? "true" : "false"}
+                      />
+                      <span className="documents-dropzone__title">
+                        Arrastra un archivo aquí o haz clic para seleccionarlo
+                      </span>
+                      <span className="documents-dropzone__subtitle">
+                        Formatos válidos: PDF, DOCX, Pages, JPEG, JPG, PNG, GIF,
+                        WEBP, XML, CSV.
+                      </span>
+                      <span className="documents-dropzone__subtitle">
+                        Solo se admite un archivo por carga.
+                      </span>
+                      <span className="documents-dropzone__subtitle">
+                        Imágenes a partir de{" "}
+                        {formatDocumentFileSize(
+                          DOCUMENT_IMAGE_OPTIMIZATION_THRESHOLD_BYTES,
+                        )}{" "}
+                        se optimizan automáticamente. Límite máximo de subida:{" "}
+                        {formatDocumentFileSize(
+                          DOCUMENT_UPLOAD_RAW_MAX_FILE_SIZE_BYTES,
+                        )}
+                        .
+                      </span>
+                      {file ? (
+                        <span className="documents-dropzone__file">
+                          Archivo seleccionado: {file.name} (
+                          {formatDocumentFileSize(file.size)})
+                        </span>
+                      ) : null}
+                      {file && isSelectedImageFile ? (
+                        <div className="documents-dropzone__actions">
+                          <button
+                            type="button"
+                            className="btn btn-outline-dark btn-sm"
+                            onClick={handleRotateSelectedImage}
+                          >
+                            Girar 90°
+                          </button>
+                          <span className="documents-dropzone__hint">
+                            {manualRotationDegrees
+                              ? `Rotación manual aplicada: ${manualRotationDegrees}°`
+                              : "Sin rotación manual aplicada."}
+                          </span>
+                        </div>
+                      ) : null}
+                      {shouldOptimizeSelectedImage ? (
+                        <span className="documents-dropzone__hint">
+                          La imagen supera el umbral de optimización y se
+                          intentará comprimir automáticamente antes del OCR.
+                        </span>
+                      ) : null}
+                    </label>
+                  </div>
+
+                  <div className="col-12 col-lg-6">
+                    <div className="row g-3">
+                      <div className="col-12 col-md-6">
+                        <label
+                          className="form-label"
+                          htmlFor="document-upload-type"
+                        >
+                          Tipo documental
+                          <FormFieldInfo text="Elige el tipo si lo conoces o deja el modo automático para que el sistema lo detecte." />
+                        </label>
+                        <select
+                          id="document-upload-type"
+                          className="form-select"
+                          value={documentType}
+                          onChange={(event) =>
+                            setDocumentType(event.currentTarget.value)
+                          }
+                        >
+                          <option value={AUTO_DOCUMENT_TYPE}>
+                            Detectar automaticamente
+                          </option>
+                          {DOCUMENT_TYPE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>
+                              {getDocumentTypeLabel(option)}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label
+                          className="form-label"
+                          htmlFor="document-upload-date"
+                        >
+                          Fecha del documento
+                          <FormFieldInfo text="Fecha que aparece en el documento, no la fecha en la que lo subes al sistema." />
+                        </label>
+                        <input
+                          id="document-upload-date"
+                          type="date"
+                          className="form-control"
+                          value={documentDate}
+                          onChange={(event) =>
+                            setDocumentDate(event.currentTarget.value)
+                          }
+                        />
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label
+                          className="form-label"
+                          htmlFor="document-upload-notes"
+                        >
+                          Notas
+                          <FormFieldInfo text="Contexto interno u observaciones que te ayuden a identificar el documento más adelante." />
+                        </label>
+                        <input
+                          id="document-upload-notes"
+                          type="text"
+                          className="form-control"
+                          value={notes}
+                          onChange={(event) =>
+                            setNotes(event.currentTarget.value)
+                          }
+                          placeholder="Contexto interno, proveedor, observaciones..."
+                        />
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <label
+                          className="form-label"
+                          htmlFor="document-upload-instructions"
+                        >
+                          LLM prompt
+                          <FormFieldInfo text="Indicaciones específicas para orientar al modelo sobre qué información priorizar o revisar." />
+                        </label>
+                        <input
+                          id="document-upload-instructions"
+                          type="text"
+                          className="form-control"
+                          value={instructions}
+                          onChange={(event) =>
+                            setInstructions(event.currentTarget.value)
+                          }
+                          placeholder="Ejemplo: extrae importes y posibles incidencias fiscales"
+                        />
+                      </div>
+
+                      <div className="col-12 mt-3">
+                        <button
+                          type="submit"
+                          className="btn btn-dark btn-lg w-100 py-3 rounded-pill"
+                          disabled={!file || isSubmitting}
+                        >
+                          {isSubmitting ? "Procesando..." : "Subir y analizar"}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+
+                {uploadValidationError ? (
+                  <div className="alert alert-danger mt-4 mb-0">
+                    {uploadValidationError}
+                  </div>
+                ) : null}
+
+                {error ? (
+                  <div className="alert alert-danger mt-4 mb-0">{error}</div>
+                ) : null}
+              </div>
             </div>
-            <div className="text-end">
-              <span className="badge text-bg-light border">OCR + LLM</span>
+
+            <div className="card border-0 shadow-sm h-100">
+              <div className="card-body p-4">
+                <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+                  <div>
+                    <h2 className="h4 mb-1">Detalle procesado</h2>
+                    <p className="text-secondary mb-0">
+                      OCR más reciente, clasificación inferida y JSON
+                      interpretado.
+                    </p>
+                  </div>
+                  {selectedDocument ? (
+                    <span className="badge text-bg-dark">
+                      {getDocumentTypeLabel(selectedDocument.documentType)}
+                    </span>
+                  ) : null}
+                </div>
+
+                {detailContent}
+              </div>
             </div>
           </div>
-
-          <form className="row g-3" onSubmit={handleSubmit}>
-            <div className="col-12 col-lg-6">
-              <label className="form-label" htmlFor="document-upload-file">
-                Archivo
-              </label>
-              <label
-                htmlFor="document-upload-file"
-                className={`documents-dropzone ${isDragActive ? "documents-dropzone--active" : ""} ${uploadValidationError ? "documents-dropzone--error" : ""}`}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-              >
-                <input
-                  id="document-upload-file"
-                  ref={fileInputRef}
-                  type="file"
-                  className="documents-dropzone__input"
-                  accept={DOCUMENT_ACCEPT_ATTRIBUTE}
-                  onChange={handleFileInputChange}
-                  aria-invalid={uploadValidationError ? "true" : "false"}
-                />
-                <span className="documents-dropzone__title">
-                  Arrastra un archivo aquí o haz clic para seleccionarlo
-                </span>
-                <span className="documents-dropzone__subtitle">
-                  Formatos válidos: PDF, DOCX, Pages, JPEG, JPG, PNG, GIF, WEBP,
-                  XML, CSV.
-                </span>
-                <span className="documents-dropzone__subtitle">
-                  Solo se admite un archivo por carga.
-                </span>
-                {file ? (
-                  <span className="documents-dropzone__file">
-                    Archivo seleccionado: {file.name}
-                  </span>
-                ) : null}
-              </label>
-            </div>
-
-            <div className="col-12 col-md-6 col-lg-3">
-              <label className="form-label" htmlFor="document-upload-type">
-                Tipo documental
-              </label>
-              <select
-                id="document-upload-type"
-                className="form-select"
-                value={documentType}
-                onChange={(event) => setDocumentType(event.currentTarget.value)}
-              >
-                <option value={AUTO_DOCUMENT_TYPE}>
-                  Detectar automaticamente
-                </option>
-                {DOCUMENT_TYPE_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {getDocumentTypeLabel(option)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="col-12 col-md-6 col-lg-3">
-              <label className="form-label" htmlFor="document-upload-date">
-                Fecha del documento
-              </label>
-              <input
-                id="document-upload-date"
-                type="date"
-                className="form-control"
-                value={documentDate}
-                onChange={(event) => setDocumentDate(event.currentTarget.value)}
-              />
-            </div>
-
-            <div className="col-12 col-lg-6">
-              <label className="form-label" htmlFor="document-upload-notes">
-                Notas
-              </label>
-              <input
-                id="document-upload-notes"
-                type="text"
-                className="form-control"
-                value={notes}
-                onChange={(event) => setNotes(event.currentTarget.value)}
-                placeholder="Contexto interno, proveedor, observaciones..."
-              />
-            </div>
-
-            <div className="col-12 col-lg-6">
-              <label
-                className="form-label"
-                htmlFor="document-upload-instructions"
-              >
-                Instrucciones para el LLM
-              </label>
-              <input
-                id="document-upload-instructions"
-                type="text"
-                className="form-control"
-                value={instructions}
-                onChange={(event) => setInstructions(event.currentTarget.value)}
-                placeholder="Ejemplo: extrae importes y posibles incidencias fiscales"
-              />
-            </div>
-
-            <div className="col-12 d-flex gap-2">
-              <button
-                type="submit"
-                className="btn btn-dark"
-                disabled={!file || isSubmitting}
-              >
-                {isSubmitting ? "Procesando..." : "Subir y analizar"}
-              </button>
-            </div>
-          </form>
-
-          {uploadValidationError ? (
-            <div className="alert alert-danger mt-4 mb-0">
-              {uploadValidationError}
-            </div>
-          ) : null}
-
-          {error ? (
-            <div className="alert alert-danger mt-4 mb-0">{error}</div>
-          ) : null}
         </div>
-      </section>
 
-      <section className="row g-4 align-items-start">
-        <div className="col-12 col-xl-5">
+        <div className="col-12 col-md-4">
           <div className="card border-0 shadow-sm h-100">
             <div className="card-body p-4">
               <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
                 <div>
                   <h2 className="h4 mb-1">Últimos documentos</h2>
-                  <p className="text-secondary mb-0">
-                    Acceso al listado independiente de documentos.
-                  </p>
                 </div>
-                <span className="badge text-bg-light border">Archivo</span>
               </div>
 
               <div className="table-responsive">
                 <table className="table align-middle mb-0">
-                  <thead>
-                    <tr>
-                      <th>Archivo</th>
-                    </tr>
-                  </thead>
                   <tbody>
                     <tr>
-                      <td>
-                        <Link to="/documents/repository">
-                          Abrir listado documental
+                      <td className="text-end">
+                        <Link
+                          to="/documents/repository"
+                          className="btn btn-outline-dark btn-sm d-inline-flex align-items-center gap-2 rounded-pill mb-4"
+                        >
+                          <DocumentRepositoryLinkIcon width={15} />
+                          <span>Abrir listado documental</span>
                         </Link>
                       </td>
                     </tr>
-                    {documents.map((document: DocumentRecord) => (
+                    {documents.slice(0, 8).map((document: DocumentRecord) => (
                       <tr key={document.id}>
                         <td>{document.displayName}</td>
                       </tr>
@@ -877,29 +1207,6 @@ export function DocumentsPage() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-12 col-xl-7">
-          <div className="card border-0 shadow-sm h-100">
-            <div className="card-body p-4">
-              <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
-                <div>
-                  <h2 className="h4 mb-1">Detalle procesado</h2>
-                  <p className="text-secondary mb-0">
-                    OCR más reciente, clasificación inferida y JSON
-                    interpretado.
-                  </p>
-                </div>
-                {selectedDocument ? (
-                  <span className="badge text-bg-dark">
-                    {getDocumentTypeLabel(selectedDocument.documentType)}
-                  </span>
-                ) : null}
-              </div>
-
-              {detailContent}
             </div>
           </div>
         </div>

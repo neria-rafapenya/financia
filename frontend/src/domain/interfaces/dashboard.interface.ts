@@ -26,6 +26,7 @@ export interface AlertSummary {
 }
 
 export interface DashboardOverview {
+  currentYear: number;
   user: User | null;
   incomes: IncomeTotals | null;
   expenses: ExpenseTotals | null;

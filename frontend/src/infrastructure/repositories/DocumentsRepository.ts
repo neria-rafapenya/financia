@@ -82,6 +82,13 @@ export class DocumentsRepository {
       formData.append("notes", payload.notes);
     }
 
+    if (typeof payload.manualRotationDegrees === "number") {
+      formData.append(
+        "manualRotationDegrees",
+        String(payload.manualRotationDegrees),
+      );
+    }
+
     if (payload.linkedEntityType) {
       formData.append("linkedEntityType", payload.linkedEntityType);
     }

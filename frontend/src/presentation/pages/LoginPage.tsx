@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/application/contexts/AuthContext";
 import { env } from "@/shared/config/env";
+import { FormFieldInfo } from "@/shared/components/FormFieldInfo";
 
 export function LoginPage() {
   const auth = useAuth();
@@ -41,16 +42,12 @@ export function LoginPage() {
                 <h1>
                   Controla ingresos, gastos y documentos desde un único panel.
                 </h1>
-                <p>
-                  Base frontend con React Vite TypeScript, routing v6, guard
-                  privado, cookies para auth y capas repository/service/context
-                  preparadas para crecer.
+                <p className="mt-5">
+                  FINANCIA te ayuda a centralizar tu información económica para
+                  consultar ingresos, registrar gastos, revisar documentos
+                  procesados y mantener una visión clara de tu situación
+                  financiera en el día a día.
                 </p>
-                <div className="login-panel__points">
-                  <span>Context como eje de estado</span>
-                  <span>Bootstrap 5 + SCSS</span>
-                  <span>API centralizada con auth</span>
-                </div>
               </section>
 
               <section className="login-panel__form card border-0 shadow-lg">
@@ -61,6 +58,7 @@ export function LoginPage() {
                     <div>
                       <label className="form-label" htmlFor="email">
                         Email
+                        <FormFieldInfo text="Correo electrónico con el que accedes a tu cuenta." />
                       </label>
                       <input
                         id="email"
@@ -76,6 +74,7 @@ export function LoginPage() {
                     <div>
                       <label className="form-label" htmlFor="password">
                         Password
+                        <FormFieldInfo text="Contraseña asociada a tu cuenta para iniciar sesión." />
                       </label>
                       <input
                         id="password"

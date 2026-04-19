@@ -1,10 +1,15 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary, type UploadApiResponse } from 'cloudinary';
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { Readable } from 'node:stream';
+import sharp from 'sharp';
 
 interface UploadedDocumentFile {
   originalname: string;
@@ -13,11 +18,50 @@ interface UploadedDocumentFile {
   buffer: Buffer;
 }
 
+interface PrepareUploadedFileOptions {
+  manualRotationDegrees?: number | null;
+}
+
 @Injectable()
 export class DocumentStorageService {
   private cloudinaryConfigured = false;
 
   constructor(private readonly configService: ConfigService) {}
+
+  async prepareUploadedFile(
+    file: UploadedDocumentFile,
+    options: PrepareUploadedFileOptions = {},
+  ) {
+    this.ensureRawUploadWithinLimit(file.size);
+
+    if (!file.mimetype.startsWith('image/')) {
+      this.ensurePreparedFileWithinLimit(file.size, false);
+      return file;
+    }
+
+    const manualRotationDegrees = this.normalizeManualRotationDegrees(
+      options.manualRotationDegrees,
+    );
+    const shouldOptimizeImage =
+      file.size >
+        this.getConfigSizeInBytes(
+          'DOCUMENT_IMAGE_OPTIMIZATION_THRESHOLD_MB',
+          4,
+        ) || manualRotationDegrees !== 0;
+
+    if (!shouldOptimizeImage) {
+      this.ensurePreparedFileWithinLimit(file.size, true);
+      return file;
+    }
+
+    const optimizedFile = await this.optimizeImageUpload(
+      file,
+      manualRotationDegrees,
+    );
+
+    this.ensurePreparedFileWithinLimit(optimizedFile.size, true);
+    return optimizedFile;
+  }
 
   async saveUploadedFile(userId: number, file: UploadedDocumentFile) {
     if (this.getStorageDriver() === 'cloudinary') {
@@ -165,6 +209,106 @@ export class DocumentStorageService {
     return storagePath.startsWith('cloudinary:');
   }
 
+  private async optimizeImageUpload(
+    file: UploadedDocumentFile,
+    manualRotationDegrees: number,
+  ) {
+    try {
+      const optimizedBuffer = await sharp(file.buffer, { failOn: 'none' })
+        .rotate()
+        .rotate(manualRotationDegrees)
+        .resize({
+          width: this.configService.get<number>(
+            'DOCUMENT_IMAGE_MAX_DIMENSION_PX',
+            2400,
+          ),
+          height: this.configService.get<number>(
+            'DOCUMENT_IMAGE_MAX_DIMENSION_PX',
+            2400,
+          ),
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .flatten({ background: '#ffffff' })
+        .jpeg({
+          quality: this.configService.get<number>(
+            'DOCUMENT_IMAGE_JPEG_QUALITY',
+            82,
+          ),
+          mozjpeg: true,
+        })
+        .toBuffer();
+
+      return {
+        ...file,
+        mimetype: 'image/jpeg',
+        size: optimizedBuffer.length,
+        buffer: optimizedBuffer,
+      };
+    } catch (error) {
+      void error;
+      throw new BadRequestException(
+        'No se pudo optimizar la imagen subida. Revisa el archivo e inténtalo de nuevo.',
+      );
+    }
+  }
+
+  private ensureRawUploadWithinLimit(fileSizeBytes: number) {
+    const rawLimitBytes = this.getConfigSizeInBytes(
+      'DOCUMENT_UPLOAD_RAW_MAX_FILE_SIZE_MB',
+      25,
+    );
+
+    if (fileSizeBytes <= rawLimitBytes) {
+      return;
+    }
+
+    throw new BadRequestException(
+      `El archivo supera el tamaño máximo de subida de ${this.formatMegabytes(rawLimitBytes)} MB. Reduce su peso antes de volver a intentarlo.`,
+    );
+  }
+
+  private ensurePreparedFileWithinLimit(
+    fileSizeBytes: number,
+    attemptedOptimization: boolean,
+  ) {
+    const acceptedLimitBytes = this.getConfigSizeInBytes(
+      'DOCUMENT_UPLOAD_MAX_FILE_SIZE_MB',
+      12,
+    );
+
+    if (fileSizeBytes <= acceptedLimitBytes) {
+      return;
+    }
+
+    const message = attemptedOptimization
+      ? `La imagen sigue superando el tamaño máximo permitido de ${this.formatMegabytes(acceptedLimitBytes)} MB incluso después de optimizarla. Reduce su resolución o compresión antes de subirla.`
+      : `El archivo supera el tamaño máximo permitido de ${this.formatMegabytes(acceptedLimitBytes)} MB.`;
+
+    throw new BadRequestException(message);
+  }
+
+  private getConfigSizeInBytes(configKey: string, fallbackMegabytes: number) {
+    const megabytes = this.configService.get<number>(
+      configKey,
+      fallbackMegabytes,
+    );
+
+    return megabytes * 1024 * 1024;
+  }
+
+  private formatMegabytes(bytes: number) {
+    return Number((bytes / (1024 * 1024)).toFixed(0));
+  }
+
+  private normalizeManualRotationDegrees(value?: number | null) {
+    if (value === 90 || value === 180 || value === 270) {
+      return value;
+    }
+
+    return 0;
+  }
+
   private buildCloudinaryStoragePath(resourceType: string, publicId: string) {
     return `cloudinary:${resourceType}:${publicId}`;
   }
@@ -215,7 +359,11 @@ export class DocumentStorageService {
         },
         (error, result) => {
           if (error || !result) {
-            reject(error ?? new Error('Cloudinary upload failed'));
+            reject(
+              error instanceof Error
+                ? error
+                : new Error('Cloudinary upload failed'),
+            );
             return;
           }
 

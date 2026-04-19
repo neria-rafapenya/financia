@@ -33,6 +33,11 @@ const defaultEnv = {
   OCR_PROVIDER: 'tesseract',
   LLM_PROVIDER: 'mock',
   LLM_MODEL: 'local-dev',
+  DOCUMENT_UPLOAD_MAX_FILE_SIZE_MB: '12',
+  DOCUMENT_UPLOAD_RAW_MAX_FILE_SIZE_MB: '25',
+  DOCUMENT_IMAGE_OPTIMIZATION_THRESHOLD_MB: '4',
+  DOCUMENT_IMAGE_MAX_DIMENSION_PX: '2400',
+  DOCUMENT_IMAGE_JPEG_QUALITY: '82',
   CORS_ALLOWED_ORIGINS: '',
   OPENAI_API_KEY: '',
   OPENAI_MODEL: 'gpt-4.1-mini',
@@ -125,6 +130,27 @@ class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   LLM_MODEL!: string;
+
+  @IsInt()
+  @Min(1)
+  DOCUMENT_UPLOAD_MAX_FILE_SIZE_MB!: number;
+
+  @IsInt()
+  @Min(1)
+  DOCUMENT_UPLOAD_RAW_MAX_FILE_SIZE_MB!: number;
+
+  @IsInt()
+  @Min(1)
+  DOCUMENT_IMAGE_OPTIMIZATION_THRESHOLD_MB!: number;
+
+  @IsInt()
+  @Min(512)
+  DOCUMENT_IMAGE_MAX_DIMENSION_PX!: number;
+
+  @IsInt()
+  @Min(40)
+  @Max(100)
+  DOCUMENT_IMAGE_JPEG_QUALITY!: number;
 
   @IsOptional()
   @IsString()

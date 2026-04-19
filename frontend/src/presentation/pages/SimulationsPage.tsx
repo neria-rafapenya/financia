@@ -7,6 +7,7 @@ import type {
 import { SimulationsRepository } from "@/infrastructure/repositories/SimulationsRepository";
 import { LoadingPanel } from "@/presentation/components/LoadingPanel";
 import { PageHero } from "@/presentation/components/PageHero";
+import { FormFieldInfo } from "@/shared/components/FormFieldInfo";
 
 const simulationsService = new SimulationsService(new SimulationsRepository());
 
@@ -152,6 +153,7 @@ export function SimulationsPage() {
             <div className="col-md-3">
               <label className="form-label mb-1" htmlFor="simulation-year">
                 Ejercicio
+                <FormFieldInfo text="Ejercicio sobre el que quieres calcular la simulación anual del IRPF." />
               </label>
               <select
                 id="simulation-year"
@@ -175,6 +177,7 @@ export function SimulationsPage() {
             <div className="col-md-3">
               <label className="form-label mb-1" htmlFor="simulation-mode">
                 Modalidad
+                <FormFieldInfo text="Tipo de declaración a simular: individual o conjunta." />
               </label>
               <select
                 id="simulation-mode"
@@ -197,6 +200,7 @@ export function SimulationsPage() {
             <div className="col-md-2">
               <label className="form-label mb-1" htmlFor="simulation-children">
                 Hijos
+                <FormFieldInfo text="Número de hijos a considerar en la simulación fiscal." />
               </label>
               <input
                 id="simulation-children"
@@ -240,6 +244,7 @@ export function SimulationsPage() {
             <div className="col-md-4">
               <label className="form-label mb-1" htmlFor="simulation-pension">
                 Aportaciones a pensiones
+                <FormFieldInfo text="Importe anual aportado a planes de pensiones que quieres aplicar en la simulación." />
               </label>
               <input
                 id="simulation-pension"
@@ -262,6 +267,7 @@ export function SimulationsPage() {
             <div className="col-md-4">
               <label className="form-label mb-1" htmlFor="simulation-donations">
                 Donativos del año
+                <FormFieldInfo text="Total anual de donativos con posible impacto en deducciones fiscales." />
               </label>
               <input
                 id="simulation-donations"
@@ -282,6 +288,7 @@ export function SimulationsPage() {
             <div className="col-md-4">
               <label className="form-label mb-1" htmlFor="simulation-housing">
                 Deducción de vivienda a aplicar
+                <FormFieldInfo text="Importe de deducción por vivienda habitual que quieres incluir en la estimación." />
               </label>
               <input
                 id="simulation-housing"

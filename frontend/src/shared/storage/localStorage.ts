@@ -1,7 +1,6 @@
 import type { User } from "@/domain/interfaces/user.interface";
 
 const AUTH_USER_KEY = "financia.auth.user";
-const SIDEBAR_STATE_KEY = "financia.ui.sidebarCollapsed";
 const LAST_SELECTED_DOCUMENT_ID_KEY = "financia.documents.lastSelectedId";
 
 function safeGetItem(key: string) {
@@ -49,14 +48,6 @@ export function setStoredUser(user: User) {
 
 export function clearStoredUser() {
   safeRemoveItem(AUTH_USER_KEY);
-}
-
-export function getSidebarCollapsed() {
-  return safeGetItem(SIDEBAR_STATE_KEY) === "true";
-}
-
-export function setSidebarCollapsed(value: boolean) {
-  safeSetItem(SIDEBAR_STATE_KEY, String(value));
 }
 
 export function getLastSelectedDocumentId() {
