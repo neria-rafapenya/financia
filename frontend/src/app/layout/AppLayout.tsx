@@ -1,24 +1,32 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/application/contexts/AuthContext";
 import { FinanciaWordmark } from "@/shared/components/FinanciaWordmark";
 import { LogoutIcon } from "@/shared/components/LogoutIcon";
 
 const navigationItems = [
   { to: "/", label: "Resumen" },
-  { to: "/alerts", label: "Alertas" },
-  { to: "/contracts", label: "Contratos" },
   { to: "/documents", label: "Documentos" },
-  { to: "/documents/labor", label: "Laborales" },
   { to: "/incomes", label: "Ingresos" },
   { to: "/expenses", label: "Gastos" },
   { to: "/recurring-payments", label: "Periódicos" },
+  { to: "/simulations", label: "Simulaciones" },
+];
+
+const alertsItem = { to: "/alerts", label: "Alertas" };
+
+const managementItems = [
+  { to: "/contracts", label: "Contratos" },
   { to: "/taxes", label: "Fiscalidad" },
   { to: "/payers", label: "Pagadores" },
-  { to: "/simulations", label: "Simulaciones" },
+  { to: "/documents/labor", label: "Laborales" },
 ];
 
 export function AppLayout() {
   const auth = useAuth();
+  const location = useLocation();
+  const isManagementActive = managementItems.some((item) =>
+    location.pathname.startsWith(item.to),
+  );
 
   return (
     <div className="app-shell">
@@ -50,6 +58,41 @@ export function AppLayout() {
                     {item.label}
                   </NavLink>
                 ))}
+
+                <div
+                  className={`app-shell__nav-group ${isManagementActive ? "is-active" : ""}`}
+                >
+                  <button
+                    type="button"
+                    className="app-shell__nav-link app-shell__nav-link--button"
+                    aria-haspopup="true"
+                  >
+                    Gestoría
+                  </button>
+
+                  <div className="app-shell__nav-dropdown">
+                    {managementItems.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        className={({ isActive }) =>
+                          `app-shell__nav-dropdown-link ${isActive ? "is-active" : ""}`
+                        }
+                      >
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+
+                <NavLink
+                  to={alertsItem.to}
+                  className={({ isActive }) =>
+                    `app-shell__nav-link ${isActive ? "is-active" : ""}`
+                  }
+                >
+                  {alertsItem.label}
+                </NavLink>
               </nav>
             </div>
 

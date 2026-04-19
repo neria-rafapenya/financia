@@ -364,6 +364,127 @@ export function IncomesPage() {
 
       <section className="card border-0 shadow-sm">
         <div className="card-body p-4">
+          <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+            <div>
+              <h2 className="h4 mb-1">Filtros del período</h2>
+              <p className="text-secondary mb-0">
+                El ejercicio fiscal español se toma desde el 1 de enero. Puedes
+                afinar por mes dentro del año seleccionado.
+              </p>
+            </div>
+
+            <div className="row g-2 w-100 w-lg-auto">
+              <div className="col-12 col-sm-auto">
+                <label className="form-label mb-1" htmlFor="incomes-year">
+                  Año
+                  <FormFieldInfo text="Ejercicio fiscal sobre el que quieres consultar los ingresos." />
+                </label>
+                <select
+                  id="incomes-year"
+                  className="form-select"
+                  value={year}
+                  onChange={(event) =>
+                    setYear(Number(event.currentTarget.value))
+                  }
+                >
+                  {yearOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-12 col-sm-auto">
+                <label className="form-label mb-1" htmlFor="incomes-month">
+                  Mes
+                  <FormFieldInfo text="Mes concreto del ejercicio para filtrar el listado de ingresos." />
+                </label>
+                <select
+                  id="incomes-month"
+                  className="form-select"
+                  value={month}
+                  onChange={(event) => setMonth(event.currentTarget.value)}
+                >
+                  {monthOptions.map((option) => (
+                    <option key={option.value || "all"} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {error ? (
+            <div className="alert alert-danger mb-4">{error}</div>
+          ) : null}
+
+          {isLoading ? <LoadingPanel message="Cargando ingresos..." /> : null}
+
+          <h2 className="h4 mb-3">Indicadores del período</h2>
+          <div className="row g-3">
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>Total computable del período</span>
+                <strong>
+                  {formatCurrency(overview?.totals.totalPeriodAmount)}
+                </strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>Total bruto</span>
+                <strong>
+                  {formatCurrency(overview?.totals.totalGrossAmount)}
+                </strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>Seguridad Social</span>
+                <strong>
+                  {formatCurrency(overview?.totals.totalSocialSecurityAmount)}
+                </strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-3 mt-1">
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>IVA asociado</span>
+                <strong>
+                  {formatCurrency(overview?.totals.totalVatAmount)}
+                </strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>IRPF retenido</span>
+                <strong>
+                  {formatCurrency(overview?.totals.totalIrpfWithheld)}
+                </strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>Registros del período</span>
+                <strong>{overview?.totals.recordCount ?? 0}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 small text-secondary">
+            {overview
+              ? `Período consultado: ${overview.period.startDate} a ${overview.period.endDate}. Inicio del ejercicio fiscal en España: ${overview.period.fiscalYearStartDate}.`
+              : "Sin datos de período cargados todavía."}
+          </div>
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body p-4">
           <div className="d-flex justify-content-between align-items-center gap-3 mb-4">
             <div>
               <h2 className="h4 mb-1">
@@ -644,127 +765,6 @@ export function IncomesPage() {
               </div>
             </div>
           </form>
-        </div>
-      </section>
-
-      <section className="card border-0 shadow-sm">
-        <div className="card-body p-4">
-          <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
-            <div>
-              <h2 className="h4 mb-1">Filtros del período</h2>
-              <p className="text-secondary mb-0">
-                El ejercicio fiscal español se toma desde el 1 de enero. Puedes
-                afinar por mes dentro del año seleccionado.
-              </p>
-            </div>
-
-            <div className="row g-2 w-100 w-lg-auto">
-              <div className="col-12 col-sm-auto">
-                <label className="form-label mb-1" htmlFor="incomes-year">
-                  Año
-                  <FormFieldInfo text="Ejercicio fiscal sobre el que quieres consultar los ingresos." />
-                </label>
-                <select
-                  id="incomes-year"
-                  className="form-select"
-                  value={year}
-                  onChange={(event) =>
-                    setYear(Number(event.currentTarget.value))
-                  }
-                >
-                  {yearOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="col-12 col-sm-auto">
-                <label className="form-label mb-1" htmlFor="incomes-month">
-                  Mes
-                  <FormFieldInfo text="Mes concreto del ejercicio para filtrar el listado de ingresos." />
-                </label>
-                <select
-                  id="incomes-month"
-                  className="form-select"
-                  value={month}
-                  onChange={(event) => setMonth(event.currentTarget.value)}
-                >
-                  {monthOptions.map((option) => (
-                    <option key={option.value || "all"} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {error ? (
-            <div className="alert alert-danger mb-4">{error}</div>
-          ) : null}
-
-          {isLoading ? <LoadingPanel message="Cargando ingresos..." /> : null}
-
-          <h2 className="h4 mb-3">Indicadores del período</h2>
-          <div className="row g-3">
-            <div className="col-md-4">
-              <div className="metric-box">
-                <span>Total computable del período</span>
-                <strong>
-                  {formatCurrency(overview?.totals.totalPeriodAmount)}
-                </strong>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="metric-box">
-                <span>Total bruto</span>
-                <strong>
-                  {formatCurrency(overview?.totals.totalGrossAmount)}
-                </strong>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="metric-box">
-                <span>Seguridad Social</span>
-                <strong>
-                  {formatCurrency(overview?.totals.totalSocialSecurityAmount)}
-                </strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="row g-3 mt-1">
-            <div className="col-md-4">
-              <div className="metric-box">
-                <span>IVA asociado</span>
-                <strong>
-                  {formatCurrency(overview?.totals.totalVatAmount)}
-                </strong>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="metric-box">
-                <span>IRPF retenido</span>
-                <strong>
-                  {formatCurrency(overview?.totals.totalIrpfWithheld)}
-                </strong>
-              </div>
-            </div>
-            <div className="col-md-4">
-              <div className="metric-box">
-                <span>Registros del período</span>
-                <strong>{overview?.totals.recordCount ?? 0}</strong>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-4 small text-secondary">
-            {overview
-              ? `Período consultado: ${overview.period.startDate} a ${overview.period.endDate}. Inicio del ejercicio fiscal en España: ${overview.period.fiscalYearStartDate}.`
-              : "Sin datos de período cargados todavía."}
-          </div>
         </div>
       </section>
 
