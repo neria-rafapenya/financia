@@ -181,6 +181,32 @@ a {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.app-shell__header-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.app-shell__header-left {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.app-shell__header-center {
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
+.app-shell__header-right {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .app-shell__subtitle,
 .app-shell__identity,
 .app-shell__footer,
@@ -197,9 +223,24 @@ a {
   color: rgba(248, 250, 252, 0.78);
 }
 
+.app-shell__brand {
+  flex-shrink: 0;
+  max-width: min(100%, 7.5rem);
+  color: #f8fafc;
+  text-decoration: none;
+}
+
+.app-shell__brand-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: #f8fafc;
+}
+
 .app-shell__nav {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
 }
 
@@ -222,7 +263,7 @@ a {
 
 .app-shell__footer {
   border-top: 1px solid var(--financia-line);
-  background: rgba(255, 255, 255, 0.45);
+  background: #000;
 }
 
 .summary-card {
@@ -789,6 +830,20 @@ a {
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.login-panel__brand {
+  display: inline-flex;
+  align-items: center;
+  max-width: min(100%, 7.5rem);
+  margin-bottom: 1.5rem;
+}
+
+.login-panel__brand-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+  color: #f8fafc;
+}
+
 .login-panel__intro p {
   color: rgba(248, 250, 252, 0.76);
   max-width: 34rem;
@@ -839,6 +894,17 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .app-shell__header-bar {
+    grid-template-columns: 1fr;
+    justify-items: stretch;
+  }
+
+  .app-shell__header-left,
+  .app-shell__header-center,
+  .app-shell__header-right {
+    justify-content: flex-start;
+  }
+
   .app-shell__identity {
     display: none;
   }
@@ -846,6 +912,7 @@ a {
   .app-shell__nav {
     overflow-x: auto;
     flex-wrap: nowrap;
+    justify-content: flex-start;
     padding-bottom: 0.3rem;
   }
 }

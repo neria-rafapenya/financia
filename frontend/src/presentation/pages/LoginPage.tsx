@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/application/contexts/AuthContext";
 import { env } from "@/shared/config/env";
+import { FinanciaWordmark } from "@/shared/components/FinanciaWordmark";
 import { FormFieldInfo } from "@/shared/components/FormFieldInfo";
 
 export function LoginPage() {
@@ -38,7 +39,9 @@ export function LoginPage() {
           <div className="col-12 col-xl-10">
             <div className="login-panel">
               <section className="login-panel__intro">
-                <span className="login-panel__eyebrow">{env.appName}</span>
+                <div className="login-panel__brand" aria-label={env.appName}>
+                  <FinanciaWordmark className="login-panel__brand-logo" />
+                </div>
                 <h1>
                   Controla ingresos, gastos y documentos desde un único panel.
                 </h1>

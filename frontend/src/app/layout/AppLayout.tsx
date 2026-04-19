@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "@/application/contexts/AuthContext";
+import { FinanciaWordmark } from "@/shared/components/FinanciaWordmark";
 import { LogoutIcon } from "@/shared/components/LogoutIcon";
 
 const navigationItems = [
@@ -19,23 +20,37 @@ export function AppLayout() {
   return (
     <div className="app-shell">
       <header className="app-shell__header">
-        <div className="container-xxl d-flex flex-column gap-3 py-3 py-lg-4">
-          <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-            <nav className="app-shell__nav">
-              {navigationItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.to === "/"}
-                  className={({ isActive }) =>
-                    `app-shell__nav-link ${isActive ? "is-active" : ""}`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
-            </nav>
-            <div className="d-flex align-items-center gap-2 gap-lg-3">
+        <div className="container-xxl py-3 py-lg-4">
+          <div className="app-shell__header-bar">
+            <div className="app-shell__header-left">
+              <NavLink
+                to="/"
+                end
+                className="app-shell__brand"
+                aria-label="FINANCIA"
+              >
+                <FinanciaWordmark className="app-shell__brand-logo" />
+              </NavLink>
+            </div>
+
+            <div className="app-shell__header-center">
+              <nav className="app-shell__nav">
+                {navigationItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.to === "/"}
+                    className={({ isActive }) =>
+                      `app-shell__nav-link ${isActive ? "is-active" : ""}`
+                    }
+                  >
+                    {item.label}
+                  </NavLink>
+                ))}
+              </nav>
+            </div>
+
+            <div className="app-shell__header-right">
               <div className="app-shell__identity">
                 <strong>
                   {auth.user?.fullName ?? auth.user?.email ?? "Usuario"}
@@ -62,13 +77,10 @@ export function AppLayout() {
       </main>
 
       <footer className="app-shell__footer">
-        <div className="container-xxl d-flex flex-column flex-lg-row justify-content-between gap-2 py-3">
+        <div className=" text-center container-xxl d-flex flex-column flex-lg-row justify-content-center gap-2 py-3">
           <span>
-            FINANCIA · Arquitectura hexagonal en frontend con React, Vite y
-            TypeScript.
-          </span>
-          <span>
-            Persistencia: cookies para auth, localStorage para estado cliente.
+            &copy; {new Date().getFullYear()} FINANCIA. Todos los derechos
+            reservados.
           </span>
         </div>
       </footer>
