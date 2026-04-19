@@ -43,3 +43,30 @@ export interface IncomePeriodFilters {
     year: number;
     month?: number;
 }
+export type IncomeType = "PAYSLIP" | "BONUS" | "FREELANCE_INVOICE" | "RETENTION_CERTIFICATE" | "OTHER";
+export interface CreateIncomeInput {
+    payerId: number;
+    contractId?: number | null;
+    incomeType: IncomeType;
+    periodYear: number;
+    periodMonth?: number | null;
+    grossAmount: number;
+    netAmount?: number | null;
+    irpfWithheld?: number | null;
+    socialSecurityAmount?: number | null;
+    flexibleCompensationAmount?: number | null;
+    notes?: string;
+}
+export interface UpdateIncomeInput {
+    payerId?: number;
+    contractId?: number | null;
+    incomeType?: IncomeType;
+    periodYear?: number;
+    periodMonth?: number | null;
+    grossAmount?: number;
+    netAmount?: number | null;
+    irpfWithheld?: number | null;
+    socialSecurityAmount?: number | null;
+    flexibleCompensationAmount?: number | null;
+    notes?: string | null;
+}

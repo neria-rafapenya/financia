@@ -8,3 +8,13 @@ export interface User {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface UpdateCurrentUserInput {
+  fullName?: string;
+  taxId?: string | null;
+}
+
+export interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
+}

@@ -2,7 +2,11 @@ import type {
   AuthTokens,
   LoginRequest,
 } from "@/domain/interfaces/auth.interface";
-import type { User } from "@/domain/interfaces/user.interface";
+import type {
+  ChangePasswordInput,
+  UpdateCurrentUserInput,
+  User,
+} from "@/domain/interfaces/user.interface";
 import { AuthRepository } from "@/infrastructure/repositories/AuthRepository";
 import {
   ACCESS_TOKEN_COOKIE,
@@ -43,6 +47,16 @@ export class AuthService {
     const user = await this.repository.getCurrentUser();
     setStoredUser(user);
     return user;
+  }
+
+  async updateCurrentUser(payload: UpdateCurrentUserInput) {
+    const user = await this.repository.updateCurrentUser(payload);
+    setStoredUser(user);
+    return user;
+  }
+
+  async changePassword(payload: ChangePasswordInput) {
+    return this.repository.changePassword(payload);
   }
 
   hydrateSession() {

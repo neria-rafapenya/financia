@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDocuments } from "@/application/contexts/DocumentsContext";
 import type { DocumentRecord } from "@/domain/interfaces/document.interface";
@@ -42,6 +42,47 @@ export function DocumentRepositoryPage() {
     null,
   );
   const [editingName, setEditingName] = useState("");
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+
+  const documentTypeOptions = useMemo(
+    () => [
+      "ALL",
+      ...Array.from(
+        new Set(documents.map((document) => document.documentType)),
+      ).sort((left, right) => left.localeCompare(right)),
+    ],
+    [documents],
+  );
+
+  const statusOptions = useMemo(
+    () => [
+      "ALL",
+      ...Array.from(new Set(documents.map((document) => document.status))).sort(
+        (left, right) => left.localeCompare(right),
+      ),
+    ],
+    [documents],
+  );
+
+  const filteredDocuments = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+
+    return documents.filter((document) => {
+      const matchesSearch =
+        normalizedSearch.length === 0 ||
+        document.displayName.toLowerCase().includes(normalizedSearch) ||
+        document.originalFilename.toLowerCase().includes(normalizedSearch) ||
+        (document.notes ?? "").toLowerCase().includes(normalizedSearch);
+      const matchesType =
+        typeFilter === "ALL" || document.documentType === typeFilter;
+      const matchesStatus =
+        statusFilter === "ALL" || document.status === statusFilter;
+
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }, [documents, search, statusFilter, typeFilter]);
 
   const startEditingDocument = (document: DocumentRecord) => {
     setEditingDocumentId(document.id);
@@ -135,19 +176,105 @@ export function DocumentRepositoryPage() {
             </button>
           </div>
 
+          <div className="row g-3 mb-4">
+            <div className="col-12 col-lg-5">
+              <input
+                type="search"
+                className="form-control"
+                placeholder="Buscar por nombre, archivo o nota"
+                value={search}
+                onChange={(event) => setSearch(event.currentTarget.value)}
+              />
+            </div>
+            <div className="col-12 col-lg-3">
+              <select
+                className="form-select"
+                value={typeFilter}
+                onChange={(event) => setTypeFilter(event.currentTarget.value)}
+              >
+                {documentTypeOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option === "ALL"
+                      ? "Todos los tipos"
+                      : getDocumentTypeLabel(option)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-12 col-lg-3">
+              <select
+                className="form-select"
+                value={statusFilter}
+                onChange={(event) => setStatusFilter(event.currentTarget.value)}
+              >
+                {statusOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option === "ALL" ? "Todos los estados" : option}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-12 col-lg-1 d-grid">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => {
+                  setSearch("");
+                  setTypeFilter("ALL");
+                  setStatusFilter("ALL");
+                }}
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+
+          <div className="row g-3 mb-4">
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>Total visibles</span>
+                <strong>{filteredDocuments.length}</strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>Pendientes de verificar</span>
+                <strong>
+                  {
+                    filteredDocuments.filter(
+                      (document) => document.status !== "VERIFIED",
+                    ).length
+                  }
+                </strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="metric-box">
+                <span>Con entidad vinculada</span>
+                <strong>
+                  {
+                    filteredDocuments.filter((document) =>
+                      Boolean(document.linkedEntityType),
+                    ).length
+                  }
+                </strong>
+              </div>
+            </div>
+          </div>
+
           {error ? (
             <div className="alert alert-danger mb-3">{error}</div>
           ) : null}
 
           {isLoading ? <LoadingPanel message="Cargando documentos..." /> : null}
 
-          {!isLoading && !documents.length ? (
+          {!isLoading && filteredDocuments.length === 0 ? (
             <p className="mb-0 text-secondary">
-              No hay documentos disponibles todavía.
+              No hay documentos que encajen con los filtros actuales.
             </p>
           ) : null}
 
-          {documents.length ? (
+          {filteredDocuments.length ? (
             <div className="table-responsive">
               <table className="table align-middle mb-0">
                 <thead>
@@ -155,11 +282,12 @@ export function DocumentRepositoryPage() {
                     <th>Archivo</th>
                     <th>Tipo</th>
                     <th>Estado</th>
+                    <th>Trazabilidad</th>
                     <th className="text-end">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {documents.map((document: DocumentRecord) => (
+                  {filteredDocuments.map((document: DocumentRecord) => (
                     <tr key={document.id}>
                       <td>
                         {editingDocumentId === document.id ? (
@@ -253,6 +381,17 @@ export function DocumentRepositoryPage() {
                       </td>
                       <td>{getDocumentTypeLabel(document.documentType)}</td>
                       <td>{document.status}</td>
+                      <td>
+                        <strong className="d-block">
+                          {document.linkedEntityType ?? "Sin entidad vinculada"}
+                        </strong>
+                        <small className="text-secondary">
+                          {document.linkedEntityId
+                            ? `ID ${document.linkedEntityId}`
+                            : (document.notes ??
+                              "Sin rastro operativo adicional")}
+                        </small>
+                      </td>
                       <td className="text-end">
                         <div className="d-inline-flex gap-2">
                           <button

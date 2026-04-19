@@ -1,4 +1,7 @@
-import type { CreatePayerPayload } from "@/domain/interfaces/payer.interface";
+import type {
+  CreatePayerPayload,
+  UpdatePayerPayload,
+} from "@/domain/interfaces/payer.interface";
 import { PayersRepository } from "@/infrastructure/repositories/PayersRepository";
 
 export class PayersService {
@@ -10,5 +13,13 @@ export class PayersService {
 
   create(payload: CreatePayerPayload) {
     return this.repository.create(payload);
+  }
+
+  update(payerId: number, payload: UpdatePayerPayload) {
+    return this.repository.update(payerId, payload);
+  }
+
+  remove(payerId: number) {
+    return this.repository.remove(payerId);
   }
 }

@@ -21,6 +21,15 @@ export class ExpensesRepository {
     });
   }
 
+  removeExpense(expenseId: number) {
+    return fetchWithAuth<{ id: number; deleted: boolean }>(
+      `/expenses/${expenseId}`,
+      {
+        method: "DELETE",
+      },
+    );
+  }
+
   getPeriodOverview(filters: ExpensePeriodFilters) {
     const searchParams = new URLSearchParams({
       year: String(filters.year),

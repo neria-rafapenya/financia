@@ -14,3 +14,9 @@ export interface CreatePayerPayload {
     payerType: Payer["payerType"];
     notes?: string;
 }
+export interface UpdatePayerPayload {
+    payerName?: string;
+    taxId?: string | null;
+    payerType?: Payer["payerType"];
+    notes?: string | null;
+}

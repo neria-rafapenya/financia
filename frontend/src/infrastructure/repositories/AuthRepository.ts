@@ -2,7 +2,11 @@ import type {
   AuthResponse,
   LoginRequest,
 } from "@/domain/interfaces/auth.interface";
-import type { User } from "@/domain/interfaces/user.interface";
+import type {
+  ChangePasswordInput,
+  UpdateCurrentUserInput,
+  User,
+} from "@/domain/interfaces/user.interface";
 import { fetchWithAuth, fetchWithoutAuth } from "@/shared/api/api";
 
 interface AuthMeResponse {
@@ -28,5 +32,19 @@ export class AuthRepository {
     return fetchWithAuth<AuthMeResponse>("/auth/me").then(
       (response) => response.user,
     );
+  }
+
+  updateCurrentUser(payload: UpdateCurrentUserInput) {
+    return fetchWithAuth<AuthMeResponse>("/users/me", {
+      method: "PATCH",
+      body: payload,
+    }).then((response) => response.user);
+  }
+
+  changePassword(payload: ChangePasswordInput) {
+    return fetchWithAuth<{ success: boolean }>("/users/me/password", {
+      method: "PATCH",
+      body: payload,
+    });
   }
 }

@@ -23,4 +23,5 @@ export interface AuthState {
 export interface AuthContextValue extends AuthState {
     login: (payload: LoginRequest) => Promise<void>;
     logout: () => Promise<void>;
+    refreshUser: () => Promise<void>;
 }

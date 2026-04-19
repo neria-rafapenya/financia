@@ -11,6 +11,43 @@ import { FormFieldInfo } from "@/shared/components/FormFieldInfo";
 
 const simulationsService = new SimulationsService(new SimulationsRepository());
 
+const scenarioPresets = [
+  {
+    id: "prudente",
+    label: "Escenario prudente",
+    description: "Reserva más caja y no computa gasto revisable.",
+    patch: {
+      applyReviewableExpenses: false,
+      annualPensionContributionAmount: 0,
+      annualDonationAmount: 0,
+      annualHousingDeductionAmount: 0,
+    },
+  },
+  {
+    id: "optimizacion",
+    label: "Optimización fiscal",
+    description: "Aplica gasto revisable y añade deducciones habituales.",
+    patch: {
+      applyReviewableExpenses: true,
+      annualPensionContributionAmount: 1500,
+      annualDonationAmount: 150,
+      annualHousingDeductionAmount: 0,
+    },
+  },
+  {
+    id: "familiar",
+    label: "Escenario familiar",
+    description: "Simula un hogar con dos hijos y declaración conjunta.",
+    patch: {
+      declarationMode: "JOINT" as const,
+      dependentChildrenCount: 2,
+      annualPensionContributionAmount: 1000,
+      annualDonationAmount: 0,
+      annualHousingDeductionAmount: 0,
+    },
+  },
+];
+
 function formatCurrency(value: number | undefined) {
   return new Intl.NumberFormat("es-ES", {
     style: "currency",
@@ -129,6 +166,22 @@ export function SimulationsPage() {
     [currentYear],
   );
 
+  const scenarioInsight = useMemo(() => {
+    if (!estimate) {
+      return null;
+    }
+
+    if (estimate.calculation.resultType === "TO_PAY") {
+      return "La simulación sugiere reservar caja para el cierre. Revisa gastos revisables y retenciones soportadas.";
+    }
+
+    if (estimate.calculation.resultType === "TO_REFUND") {
+      return "La simulación anticipa devolución. Verifica que las deducciones y mínimos aplicados estén respaldados por documentación.";
+    }
+
+    return "La simulación está equilibrada. Mantén controlados ingresos, gastos y obligaciones antes del cierre definitivo.";
+  }, [estimate]);
+
   return (
     <div className="page-stack">
       <PageHero
@@ -159,12 +212,14 @@ export function SimulationsPage() {
                 id="simulation-year"
                 className="form-select"
                 value={filters.year}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = Number(event.currentTarget.value);
+
                   setFilters((currentFilters) => ({
                     ...currentFilters,
-                    year: Number(event.currentTarget.value),
-                  }))
-                }
+                    year: nextValue,
+                  }));
+                }}
               >
                 {yearOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -183,14 +238,16 @@ export function SimulationsPage() {
                 id="simulation-mode"
                 className="form-select"
                 value={filters.declarationMode}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = event.currentTarget.value as
+                    | "INDIVIDUAL"
+                    | "JOINT";
+
                   setFilters((currentFilters) => ({
                     ...currentFilters,
-                    declarationMode: event.currentTarget.value as
-                      | "INDIVIDUAL"
-                      | "JOINT",
-                  }))
-                }
+                    declarationMode: nextValue,
+                  }));
+                }}
               >
                 <option value="INDIVIDUAL">Individual</option>
                 <option value="JOINT">Conjunta</option>
@@ -209,12 +266,14 @@ export function SimulationsPage() {
                 min="0"
                 max="10"
                 value={filters.dependentChildrenCount ?? 0}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = Number(event.currentTarget.value);
+
                   setFilters((currentFilters) => ({
                     ...currentFilters,
-                    dependentChildrenCount: Number(event.currentTarget.value),
-                  }))
-                }
+                    dependentChildrenCount: nextValue,
+                  }));
+                }}
               />
             </div>
 
@@ -225,12 +284,14 @@ export function SimulationsPage() {
                   className="form-check-input"
                   type="checkbox"
                   checked={Boolean(filters.applyReviewableExpenses)}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextChecked = event.currentTarget.checked;
+
                     setFilters((currentFilters) => ({
                       ...currentFilters,
-                      applyReviewableExpenses: event.currentTarget.checked,
-                    }))
-                  }
+                      applyReviewableExpenses: nextChecked,
+                    }));
+                  }}
                 />
                 <label
                   className="form-check-label"
@@ -253,14 +314,14 @@ export function SimulationsPage() {
                 min="0"
                 step="0.01"
                 value={filters.annualPensionContributionAmount ?? 0}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = Number(event.currentTarget.value);
+
                   setFilters((currentFilters) => ({
                     ...currentFilters,
-                    annualPensionContributionAmount: Number(
-                      event.currentTarget.value,
-                    ),
-                  }))
-                }
+                    annualPensionContributionAmount: nextValue,
+                  }));
+                }}
               />
             </div>
 
@@ -276,12 +337,14 @@ export function SimulationsPage() {
                 min="0"
                 step="0.01"
                 value={filters.annualDonationAmount ?? 0}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = Number(event.currentTarget.value);
+
                   setFilters((currentFilters) => ({
                     ...currentFilters,
-                    annualDonationAmount: Number(event.currentTarget.value),
-                  }))
-                }
+                    annualDonationAmount: nextValue,
+                  }));
+                }}
               />
             </div>
 
@@ -297,14 +360,14 @@ export function SimulationsPage() {
                 min="0"
                 step="0.01"
                 value={filters.annualHousingDeductionAmount ?? 0}
-                onChange={(event) =>
+                onChange={(event) => {
+                  const nextValue = Number(event.currentTarget.value);
+
                   setFilters((currentFilters) => ({
                     ...currentFilters,
-                    annualHousingDeductionAmount: Number(
-                      event.currentTarget.value,
-                    ),
-                  }))
-                }
+                    annualHousingDeductionAmount: nextValue,
+                  }));
+                }}
               />
             </div>
           </div>
@@ -315,8 +378,85 @@ export function SimulationsPage() {
           {isLoading ? (
             <LoadingPanel message="Calculando simulacion anual..." />
           ) : null}
+
+          <div className="row g-3 mt-1">
+            {scenarioPresets.map((preset) => (
+              <div key={preset.id} className="col-12 col-lg-4">
+                <article className="entity-card entity-card--stacked h-100">
+                  <div>
+                    <h3 className="h6 mb-1">{preset.label}</h3>
+                    <p className="small text-secondary mb-3">
+                      {preset.description}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-outline-dark btn-sm"
+                    onClick={() =>
+                      setFilters((currentFilters) => ({
+                        ...currentFilters,
+                        ...preset.patch,
+                      }))
+                    }
+                  >
+                    Aplicar escenario
+                  </button>
+                </article>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
+
+      {estimate ? (
+        <section className="card border-0 shadow-sm">
+          <div className="card-body p-4">
+            <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+              <div>
+                <h2 className="h4 mb-1">Lectura ejecutiva</h2>
+                <p className="text-secondary mb-0">
+                  Resultado sintetizado para comparar caja, deducciones y
+                  presión fiscal.
+                </p>
+              </div>
+            </div>
+
+            <div className="row g-3">
+              <div className="col-md-4">
+                <div className="metric-box">
+                  <span>Presión fiscal estimada</span>
+                  <strong>
+                    {estimate.income.totalIncome > 0
+                      ? formatPercent(
+                          estimate.calculation.estimatedQuota /
+                            estimate.income.totalIncome,
+                        )
+                      : "0 %"}
+                  </strong>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="metric-box">
+                  <span>Retenciones ya soportadas</span>
+                  <strong>
+                    {formatCurrency(estimate.income.irpfWithheld)}
+                  </strong>
+                </div>
+              </div>
+              <div className="col-md-4">
+                <div className="metric-box">
+                  <span>Gasto usado en cálculo</span>
+                  <strong>
+                    {formatCurrency(estimate.expenses.deductibleAmountUsed)}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-secondary mb-0 mt-4">{scenarioInsight}</p>
+          </div>
+        </section>
+      ) : null}
 
       <section className="card border-0 shadow-sm">
         <div className="card-body p-4">

@@ -142,12 +142,16 @@ export function ExpensesPage() {
   const [formState, setFormState] = useState<ExpenseFormState>(() =>
     createInitialExpenseFormState(),
   );
+  const [editingExpenseId, setEditingExpenseId] = useState<number | null>(null);
   const [overview, setOverview] = useState<ExpensePeriodOverview | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmittingExpense, setIsSubmittingExpense] = useState(false);
   const [updatingPaymentExpenseId, setUpdatingPaymentExpenseId] = useState<
     number | null
   >(null);
+  const [deletingExpenseId, setDeletingExpenseId] = useState<number | null>(
+    null,
+  );
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -292,6 +296,26 @@ export function ExpensesPage() {
     setIsSubmittingExpense(true);
 
     try {
+      if (editingExpenseId) {
+        await expensesService.updateExpense(editingExpenseId, {
+          expenseDate: payload.expenseDate,
+          concept: payload.concept,
+          vendorName: payload.vendorName ?? null,
+          amount: payload.amount,
+          vatAmount: payload.vatAmount ?? null,
+          isPaid: payload.isPaid,
+          sourceType: "MANUAL",
+          deductibilityStatus: payload.deductibilityStatus,
+          businessUsePercent: payload.businessUsePercent ?? null,
+          notes: payload.notes ?? null,
+        });
+        await loadOverview(true);
+        setFormState(createInitialExpenseFormState());
+        setEditingExpenseId(null);
+        setSuccessMessage("Gasto manual actualizado correctamente.");
+        return;
+      }
+
       await expensesService.createExpense(payload);
 
       let nextSuccessMessage = "Gasto manual registrado correctamente.";
@@ -346,6 +370,72 @@ export function ExpensesPage() {
       ),
     [currentYear],
   );
+
+  const handleEditExpense = (item: ExpensePeriodItem) => {
+    setEditingExpenseId(item.sourceId);
+    setSuccessMessage(null);
+    setError(null);
+    setFormState({
+      expenseDate: item.expenseDate ?? getCurrentDateInputValue(),
+      concept: item.concept,
+      vendorName: item.vendorName ?? "",
+      amount: String(item.amount),
+      vatAmount: item.vatAmount === null ? "" : String(item.vatAmount),
+      deductibilityStatus:
+        item.deductibilityStatus as ExpenseDeductibilityStatus,
+      businessUsePercent: "100",
+      notes: item.notes ?? "",
+      isPaid: Boolean(item.isPaid),
+      createRecurring: false,
+      recurringFrequency: "MONTHLY",
+      recurringNextDueDate: item.expenseDate ?? getCurrentDateInputValue(),
+      recurringNotes: "",
+    });
+  };
+
+  const handleCancelExpenseEdit = () => {
+    setEditingExpenseId(null);
+    setFormState(createInitialExpenseFormState());
+    setError(null);
+  };
+
+  const handleDeleteExpense = async (item: ExpensePeriodItem) => {
+    const confirmation = await Swal.fire({
+      title: "Eliminar gasto manual",
+      text: `Se eliminará ${item.concept}. Esta acción no se puede deshacer.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Eliminar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+      focusCancel: true,
+    });
+
+    if (!confirmation.isConfirmed) {
+      return;
+    }
+
+    setDeletingExpenseId(item.sourceId);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      await expensesService.removeExpense(item.sourceId);
+      if (editingExpenseId === item.sourceId) {
+        handleCancelExpenseEdit();
+      }
+      await loadOverview(true);
+      setSuccessMessage("Gasto manual eliminado correctamente.");
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof Error
+          ? caughtError.message
+          : "No se pudo eliminar el gasto manual",
+      );
+    } finally {
+      setDeletingExpenseId(null);
+    }
+  };
 
   return (
     <div className="page-stack">
@@ -464,6 +554,13 @@ export function ExpensesPage() {
             <span className="badge text-bg-light border">Alta rápida</span>
           </div>
 
+          {editingExpenseId ? (
+            <div className="alert alert-info mb-4">
+              Estás editando un gasto manual existente. Al guardar se
+              actualizará el registro seleccionado.
+            </div>
+          ) : null}
+
           {successMessage ? (
             <div className="alert alert-success mb-4">{successMessage}</div>
           ) : null}
@@ -480,12 +577,14 @@ export function ExpensesPage() {
                   className="form-control"
                   type="date"
                   value={formState.expenseDate}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextValue = event.currentTarget.value;
+
                     setFormState((currentState) => ({
                       ...currentState,
-                      expenseDate: event.currentTarget.value,
-                    }))
-                  }
+                      expenseDate: nextValue,
+                    }));
+                  }}
                   required
                 />
               </div>
@@ -501,12 +600,14 @@ export function ExpensesPage() {
                   type="text"
                   placeholder="Ej. suscripcion Netflix"
                   value={formState.concept}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextValue = event.currentTarget.value;
+
                     setFormState((currentState) => ({
                       ...currentState,
-                      concept: event.currentTarget.value,
-                    }))
-                  }
+                      concept: nextValue,
+                    }));
+                  }}
                   required
                 />
               </div>
@@ -522,12 +623,14 @@ export function ExpensesPage() {
                   type="text"
                   placeholder="Opcional"
                   value={formState.vendorName}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextValue = event.currentTarget.value;
+
                     setFormState((currentState) => ({
                       ...currentState,
-                      vendorName: event.currentTarget.value,
-                    }))
-                  }
+                      vendorName: nextValue,
+                    }));
+                  }}
                 />
               </div>
 
@@ -545,12 +648,14 @@ export function ExpensesPage() {
                   inputMode="decimal"
                   placeholder="0,00"
                   value={formState.amount}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextValue = event.currentTarget.value;
+
                     setFormState((currentState) => ({
                       ...currentState,
-                      amount: event.currentTarget.value,
-                    }))
-                  }
+                      amount: nextValue,
+                    }));
+                  }}
                   required
                 />
               </div>
@@ -569,12 +674,14 @@ export function ExpensesPage() {
                   inputMode="decimal"
                   placeholder="Opcional"
                   value={formState.vatAmount}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextValue = event.currentTarget.value;
+
                     setFormState((currentState) => ({
                       ...currentState,
-                      vatAmount: event.currentTarget.value,
-                    }))
-                  }
+                      vatAmount: nextValue,
+                    }));
+                  }}
                 />
               </div>
 
@@ -616,12 +723,14 @@ export function ExpensesPage() {
                   max="100"
                   step="1"
                   value={formState.businessUsePercent}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextValue = event.currentTarget.value;
+
                     setFormState((currentState) => ({
                       ...currentState,
-                      businessUsePercent: event.currentTarget.value,
-                    }))
-                  }
+                      businessUsePercent: nextValue,
+                    }));
+                  }}
                 />
               </div>
 
@@ -636,12 +745,14 @@ export function ExpensesPage() {
                   rows={3}
                   placeholder="Describe el gasto o deja contexto para revisarlo después"
                   value={formState.notes}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    const nextValue = event.currentTarget.value;
+
                     setFormState((currentState) => ({
                       ...currentState,
-                      notes: event.currentTarget.value,
-                    }))
-                  }
+                      notes: nextValue,
+                    }));
+                  }}
                 />
               </div>
 
@@ -653,12 +764,14 @@ export function ExpensesPage() {
                       className="form-check-input"
                       type="checkbox"
                       checked={formState.isPaid}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const nextChecked = event.currentTarget.checked;
+
                         setFormState((currentState) => ({
                           ...currentState,
-                          isPaid: event.currentTarget.checked,
-                        }))
-                      }
+                          isPaid: nextChecked,
+                        }));
+                      }}
                     />
                     <label
                       className="form-check-label"
@@ -674,15 +787,17 @@ export function ExpensesPage() {
                       className="form-check-input"
                       type="checkbox"
                       checked={formState.createRecurring}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const nextChecked = event.currentTarget.checked;
+
                         setFormState((currentState) => ({
                           ...currentState,
-                          createRecurring: event.currentTarget.checked,
+                          createRecurring: nextChecked,
                           recurringNextDueDate:
                             currentState.recurringNextDueDate ||
                             currentState.expenseDate,
-                        }))
-                      }
+                        }));
+                      }}
                     />
                     <label
                       className="form-check-label"
@@ -734,12 +849,14 @@ export function ExpensesPage() {
                       className="form-control"
                       type="date"
                       value={formState.recurringNextDueDate}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const nextValue = event.currentTarget.value;
+
                         setFormState((currentState) => ({
                           ...currentState,
-                          recurringNextDueDate: event.currentTarget.value,
-                        }))
-                      }
+                          recurringNextDueDate: nextValue,
+                        }));
+                      }}
                     />
                   </div>
 
@@ -754,12 +871,14 @@ export function ExpensesPage() {
                       type="text"
                       placeholder="Opcional"
                       value={formState.recurringNotes}
-                      onChange={(event) =>
+                      onChange={(event) => {
+                        const nextValue = event.currentTarget.value;
+
                         setFormState((currentState) => ({
                           ...currentState,
-                          recurringNotes: event.currentTarget.value,
-                        }))
-                      }
+                          recurringNotes: nextValue,
+                        }));
+                      }}
                     />
                   </div>
                 </>
@@ -778,8 +897,20 @@ export function ExpensesPage() {
                 >
                   {isSubmittingExpense
                     ? "Guardando gasto..."
-                    : "Guardar gasto manual"}
+                    : editingExpenseId
+                      ? "Guardar cambios"
+                      : "Guardar gasto manual"}
                 </button>
+
+                {editingExpenseId ? (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={handleCancelExpenseEdit}
+                  >
+                    Cancelar edición
+                  </button>
+                ) : null}
               </div>
             </div>
           </form>
@@ -822,6 +953,7 @@ export function ExpensesPage() {
                     <th>Estado fiscal</th>
                     <th className="text-end">Importe</th>
                     <th className="text-end">IVA</th>
+                    <th className="text-end">Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -867,6 +999,33 @@ export function ExpensesPage() {
                       </td>
                       <td className="text-end">
                         {formatCurrency(item.vatAmount ?? 0)}
+                      </td>
+                      <td className="text-end">
+                        {item.source === "MANUAL" ? (
+                          <div className="d-inline-flex gap-2">
+                            <button
+                              type="button"
+                              className="btn btn-outline-dark btn-sm"
+                              onClick={() => handleEditExpense(item)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-outline-danger btn-sm"
+                              onClick={() => void handleDeleteExpense(item)}
+                              disabled={deletingExpenseId === item.sourceId}
+                            >
+                              {deletingExpenseId === item.sourceId
+                                ? "Eliminando"
+                                : "Borrar"}
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="small text-secondary">
+                            Solo lectura
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

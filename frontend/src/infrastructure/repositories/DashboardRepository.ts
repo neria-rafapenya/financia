@@ -1,11 +1,14 @@
 import type {
-  AlertSummary,
   ExpenseTotals,
   IncomeTotals,
 } from "@/domain/interfaces/dashboard.interface";
+import type { AlertRecord } from "@/domain/interfaces/alert.interface";
+import type { ContractRecord } from "@/domain/interfaces/contract.interface";
 import type { DocumentRecord } from "@/domain/interfaces/document.interface";
 import type { ExpensePeriodOverview } from "@/domain/interfaces/expense.interface";
 import type { IncomePeriodOverview } from "@/domain/interfaces/income.interface";
+import type { RecurringPaymentRecord } from "@/domain/interfaces/recurring-payment.interface";
+import type { TaxPeriodOverview } from "@/domain/interfaces/tax.interface";
 import type { User } from "@/domain/interfaces/user.interface";
 import { fetchWithAuth } from "@/shared/api/api";
 
@@ -49,10 +52,22 @@ export class DashboardRepository {
   }
 
   getAlerts() {
-    return fetchWithAuth<AlertSummary[]>("/alerts");
+    return fetchWithAuth<AlertRecord[]>("/alerts");
+  }
+
+  getContracts() {
+    return fetchWithAuth<ContractRecord[]>("/contracts");
+  }
+
+  getRecurringPayments() {
+    return fetchWithAuth<RecurringPaymentRecord[]>("/recurring-payments");
   }
 
   getDocuments() {
     return fetchWithAuth<DocumentRecord[]>("/documents");
+  }
+
+  getTaxOverview(year: number) {
+    return fetchWithAuth<TaxPeriodOverview>(`/tax/obligations?year=${year}`);
   }
 }

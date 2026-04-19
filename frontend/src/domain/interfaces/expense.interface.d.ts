@@ -26,7 +26,19 @@ export interface CreateExpenseInput {
     notes?: string;
 }
 export interface UpdateExpenseInput {
+    categoryId?: number | null;
+    payerId?: number | null;
+    expenseDate?: string;
+    concept?: string;
+    vendorName?: string | null;
+    amount?: number;
+    vatAmount?: number | null;
     isPaid?: boolean;
+    currency?: string;
+    sourceType?: "MANUAL";
+    deductibilityStatus?: ExpenseDeductibilityStatus;
+    businessUsePercent?: number | null;
+    notes?: string | null;
 }
 export interface ExpensePeriodOverview {
     period: {

@@ -2,10 +2,14 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
+import { compare, hash } from 'bcryptjs';
 import type { RowDataPacket } from 'mysql2/promise';
 import { normalizeValidSpanishTaxId } from '../../common/tax-id';
 import { DatabaseService } from '../../database/database.service';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateCurrentUserDto } from './dto/update-current-user.dto';
 
 interface UserRow extends RowDataPacket {
   id: number;
@@ -133,6 +137,72 @@ export class UsersService {
   async getPublicUserById(userId: number) {
     const user = await this.getUserById(userId);
     return this.toPublicUser(user);
+  }
+
+  async updateCurrentUser(
+    userId: number,
+    updateCurrentUserDto: UpdateCurrentUserDto,
+  ) {
+    const user = await this.getUserById(userId);
+    const nextFullName = updateCurrentUserDto.fullName?.trim() ?? user.fullName;
+    const nextTaxId =
+      updateCurrentUserDto.taxId === undefined
+        ? user.taxId
+        : updateCurrentUserDto.taxId?.trim() || null;
+
+    await this.databaseService.execute(
+      `
+        UPDATE finan_users
+        SET full_name = ?
+        WHERE id = ?
+      `,
+      [nextFullName, userId],
+    );
+
+    await this.databaseService.execute(
+      `
+        UPDATE finan_user_profiles
+        SET tax_id = ?
+        WHERE user_id = ?
+      `,
+      [nextTaxId, userId],
+    );
+
+    return this.getPublicUserById(userId);
+  }
+
+  async changePassword(userId: number, changePasswordDto: ChangePasswordDto) {
+    const user = await this.getUserById(userId);
+    const matches = await compare(
+      changePasswordDto.currentPassword,
+      user.passwordHash,
+    );
+
+    if (!matches) {
+      throw new UnauthorizedException('Current password is invalid');
+    }
+
+    const nextPasswordHash = await hash(changePasswordDto.newPassword, 12);
+
+    await this.databaseService.execute(
+      `
+        UPDATE finan_users
+        SET password_hash = ?
+        WHERE id = ?
+      `,
+      [nextPasswordHash, userId],
+    );
+
+    await this.databaseService.execute(
+      `
+        UPDATE finan_user_sessions
+        SET revoked_at = CURRENT_TIMESTAMP
+        WHERE user_id = ? AND revoked_at IS NULL
+      `,
+      [userId],
+    );
+
+    return { success: true };
   }
 
   toPublicUser(user: UserRecord): PublicUser {

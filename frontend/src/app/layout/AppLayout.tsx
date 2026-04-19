@@ -5,10 +5,13 @@ import { LogoutIcon } from "@/shared/components/LogoutIcon";
 
 const navigationItems = [
   { to: "/", label: "Resumen" },
+  { to: "/alerts", label: "Alertas" },
+  { to: "/contracts", label: "Contratos" },
   { to: "/documents", label: "Documentos" },
   { to: "/documents/labor", label: "Laborales" },
   { to: "/incomes", label: "Ingresos" },
   { to: "/expenses", label: "Gastos" },
+  { to: "/recurring-payments", label: "Periódicos" },
   { to: "/taxes", label: "Fiscalidad" },
   { to: "/payers", label: "Pagadores" },
   { to: "/simulations", label: "Simulaciones" },
@@ -52,13 +55,15 @@ export function AppLayout() {
 
             <div className="app-shell__header-right">
               <div className="app-shell__identity">
-                <strong>
-                  {auth.user?.fullName ?? auth.user?.email ?? "Usuario"}
-                </strong>
+                <NavLink to="/profile" className="app-shell__identity-link">
+                  <strong>
+                    {auth.user?.fullName ?? auth.user?.email ?? "Usuario"}
+                  </strong>
+                </NavLink>
               </div>
               <button
                 type="button"
-                className="btn  btn-sm"
+                className="btn btn-sm"
                 aria-label="Cerrar sesion"
                 title="Cerrar sesion"
                 onClick={() => void auth.logout()}
@@ -77,7 +82,7 @@ export function AppLayout() {
       </main>
 
       <footer className="app-shell__footer">
-        <div className=" text-center container-xxl d-flex flex-column flex-lg-row justify-content-center gap-2 py-3">
+        <div className="container-xxl d-flex flex-column flex-lg-row justify-content-center gap-2 py-3 text-center">
           <span>
             &copy; {new Date().getFullYear()} FINANCIA. Todos los derechos
             reservados.

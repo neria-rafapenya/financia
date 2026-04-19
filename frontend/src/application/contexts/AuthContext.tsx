@@ -201,13 +201,23 @@ export function AuthProvider({ children }: Readonly<PropsWithChildren>) {
     navigate("/login", { replace: true });
   }, [navigate]);
 
+  const refreshUser = useCallback(async () => {
+    const user = await authService.fetchCurrentUser();
+
+    setState((current) => ({
+      ...current,
+      user,
+    }));
+  }, []);
+
   const value = useMemo<AuthContextValue>(
     () => ({
       ...state,
       login,
       logout,
+      refreshUser,
     }),
-    [login, logout, state],
+    [login, logout, refreshUser, state],
   );
 
   return <authContext.Provider value={value}>{children}</authContext.Provider>;

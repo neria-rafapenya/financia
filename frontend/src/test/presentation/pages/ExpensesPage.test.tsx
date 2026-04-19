@@ -5,6 +5,7 @@ import type { ExpensePeriodOverview } from "@/domain/interfaces/expense.interfac
 const mockGetPeriodOverviewFn = jest.fn();
 const mockCreateExpenseFn = jest.fn();
 const mockUpdateExpenseFn = jest.fn();
+const mockRemoveExpenseFn = jest.fn();
 const mockCreateRecurringPaymentFn = jest.fn();
 
 function mockGetPeriodOverview(...args: unknown[]) {
@@ -19,6 +20,10 @@ function mockUpdateExpense(...args: unknown[]) {
   return mockUpdateExpenseFn(...args);
 }
 
+function mockRemoveExpense(...args: unknown[]) {
+  return mockRemoveExpenseFn(...args);
+}
+
 function mockCreateRecurringPayment(...args: unknown[]) {
   return mockCreateRecurringPaymentFn(...args);
 }
@@ -30,11 +35,14 @@ jest.mock("sweetalert2", () => ({
   },
 }));
 
+import Swal from "sweetalert2";
+
 jest.mock("@/application/services/ExpensesService", () => ({
   ExpensesService: jest.fn().mockImplementation(() => ({
     getPeriodOverview: mockGetPeriodOverview,
     createExpense: mockCreateExpense,
     updateExpense: mockUpdateExpense,
+    removeExpense: mockRemoveExpense,
   })),
 }));
 
@@ -150,7 +158,9 @@ describe("ExpensesPage", () => {
     mockGetPeriodOverviewFn.mockReset();
     mockCreateExpenseFn.mockReset();
     mockUpdateExpenseFn.mockReset();
+    mockRemoveExpenseFn.mockReset();
     mockCreateRecurringPaymentFn.mockReset();
+    (Swal.fire as jest.Mock).mockReset();
   });
 
   afterEach(() => {
@@ -243,13 +253,55 @@ describe("ExpensesPage", () => {
 
     await screen.findByText("Factura proveedor software");
 
-    await user.selectOptions(screen.getByLabelText("Mes"), "4");
+    await user.selectOptions(screen.getAllByLabelText(/Mes/)[0], "4");
 
     await waitFor(() => {
       expect(mockGetPeriodOverviewFn).toHaveBeenLastCalledWith({
         year: 2026,
         month: 4,
       });
+    });
+  });
+
+  test("permite editar y eliminar un gasto manual existente", async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    mockGetPeriodOverviewFn.mockResolvedValue(createExpenseOverview());
+    mockUpdateExpenseFn.mockResolvedValue(undefined);
+    mockRemoveExpenseFn.mockResolvedValue({ id: 13, deleted: true });
+    (Swal.fire as jest.Mock).mockResolvedValue({ isConfirmed: true });
+
+    renderExpensesPage();
+
+    await screen.findByText("Suscripción Canva Pro");
+
+    const editButtons = screen.getAllByRole("button", { name: "Editar" });
+    await user.click(editButtons[0]);
+
+    const conceptInput = screen.getByPlaceholderText("Ej. suscripcion Netflix");
+    await user.clear(conceptInput);
+    await user.type(conceptInput, "Suscripción Canva Teams");
+    await user.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => {
+      expect(mockUpdateExpenseFn).toHaveBeenCalledWith(13, {
+        expenseDate: "2026-04-09",
+        concept: "Suscripción Canva Teams",
+        vendorName: null,
+        amount: 15.39,
+        vatAmount: null,
+        isPaid: false,
+        sourceType: "MANUAL",
+        deductibilityStatus: "DEDUCTIBLE",
+        businessUsePercent: 100,
+        notes: null,
+      });
+    });
+
+    const deleteButtons = screen.getAllByRole("button", { name: "Borrar" });
+    await user.click(deleteButtons[0]);
+
+    await waitFor(() => {
+      expect(mockRemoveExpenseFn).toHaveBeenCalledWith(13);
     });
   });
 });

@@ -1,4 +1,4 @@
-import type { ExpenseDeductibilityStatus } from "@/domain/interfaces/expense.interface";
+import type { ExpenseDeductibilityStatus } from "./expense.interface";
 
 export type RecurringPaymentFrequency =
   | "MONTHLY"
@@ -30,4 +30,15 @@ export interface CreateRecurringPaymentInput {
   isActive?: boolean;
   deductibilityStatus?: ExpenseDeductibilityStatus;
   notes?: string;
+}
+
+export interface UpdateRecurringPaymentInput {
+  categoryId?: number | null;
+  title?: string;
+  amount?: number;
+  frequency?: RecurringPaymentFrequency;
+  nextDueDate?: string;
+  isActive?: boolean;
+  deductibilityStatus?: ExpenseDeductibilityStatus;
+  notes?: string | null;
 }

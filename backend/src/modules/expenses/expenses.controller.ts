@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -59,5 +60,13 @@ export class ExpensesController {
       expenseId,
       updateExpenseDto,
     );
+  }
+
+  @Delete(':id')
+  remove(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseIntPipe) expenseId: number,
+  ) {
+    return this.expensesService.remove(user.userId, expenseId);
   }
 }

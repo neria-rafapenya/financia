@@ -17,6 +17,10 @@ export class ExpensesService {
     return this.repository.updateExpense(expenseId, payload);
   }
 
+  removeExpense(expenseId: number) {
+    return this.repository.removeExpense(expenseId);
+  }
+
   getPeriodOverview(
     filters: ExpensePeriodFilters,
   ): Promise<ExpensePeriodOverview> {

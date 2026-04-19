@@ -1,4 +1,9 @@
 import type { User } from "./user.interface";
+import type { AlertRecord } from "./alert.interface";
+import type { ContractRecord } from "./contract.interface";
+import type { DocumentRecord } from "./document.interface";
+import type { RecurringPaymentRecord } from "./recurring-payment.interface";
+import type { TaxObligationItem } from "./tax.interface";
 
 export interface IncomeTotals {
   totalGrossAmount: number;
@@ -20,9 +25,21 @@ export interface AlertSummary {
   severity: string;
   title: string;
   message: string;
+  linkedEntityType: string | null;
+  linkedEntityId: number | null;
   isRead: boolean;
   isResolved: boolean;
   createdAt: string | null;
+}
+
+export interface DashboardPriorityItem {
+  id: string;
+  category: "taxes" | "documents" | "alerts" | "recurring-payments";
+  title: string;
+  detail: string;
+  urgencyLabel: "alta" | "media";
+  to: string;
+  actionLabel: string;
 }
 
 export interface DashboardOverview {
@@ -31,5 +48,16 @@ export interface DashboardOverview {
   incomes: IncomeTotals | null;
   expenses: ExpenseTotals | null;
   unreadAlerts: AlertSummary[];
+  alertInbox: AlertRecord[];
+  unresolvedAlertsCount: number;
   uploadedDocuments: number;
+  documentsPendingReviewCount: number;
+  documentsPendingReview: DocumentRecord[];
+  activeContractsCount: number;
+  recurringPaymentsDueSoonCount: number;
+  contracts: ContractRecord[];
+  recurringPayments: RecurringPaymentRecord[];
+  recurringPaymentsDueSoon: RecurringPaymentRecord[];
+  nextTaxDeadlines: TaxObligationItem[];
+  priorityItems: DashboardPriorityItem[];
 }

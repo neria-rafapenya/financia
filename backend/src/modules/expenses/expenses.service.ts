@@ -202,6 +202,20 @@ export class ExpensesService {
     return this.getById(userId, expenseId);
   }
 
+  async remove(userId: number, expenseId: number) {
+    await this.getById(userId, expenseId);
+
+    await this.databaseService.execute(
+      `
+        DELETE FROM finan_expenses
+        WHERE id = ? AND user_id = ?
+      `,
+      [expenseId, userId],
+    );
+
+    return { id: expenseId, deleted: true };
+  }
+
   async summary(userId: number) {
     const [totals] = await this.databaseService.query<ExpenseTotalsRow[]>(
       `

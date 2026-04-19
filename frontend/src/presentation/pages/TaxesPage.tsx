@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { TaxService } from "@/application/services/TaxService";
 import type { TaxPeriodOverview } from "@/domain/interfaces/tax.interface";
 import { TaxRepository } from "@/infrastructure/repositories/TaxRepository";
@@ -123,6 +124,22 @@ export function TaxesPage() {
     [currentYear],
   );
 
+  const dueSoonItems = useMemo(
+    () => overview?.items.filter((item) => isDueDateNear(item.dueDate)) ?? [],
+    [overview],
+  );
+
+  const vatItems = useMemo(
+    () => overview?.items.filter((item) => item.obligationType === "VAT") ?? [],
+    [overview],
+  );
+
+  const irpfItems = useMemo(
+    () =>
+      overview?.items.filter((item) => item.obligationType === "IRPF") ?? [],
+    [overview],
+  );
+
   return (
     <div className="page-stack">
       <PageHero
@@ -208,6 +225,75 @@ export function TaxesPage() {
           {isLoading ? (
             <LoadingPanel message="Cargando obligaciones fiscales..." />
           ) : null}
+        </div>
+      </section>
+
+      <section className="card border-0 shadow-sm">
+        <div className="card-body p-4">
+          <div className="d-flex justify-content-between align-items-center gap-3 mb-3">
+            <div>
+              <h2 className="h4 mb-1">Plan de cierre fiscal</h2>
+              <p className="text-secondary mb-0">
+                Convierte la fiscalidad en una secuencia operativa y no solo en
+                un listado de importes.
+              </p>
+            </div>
+            <Link className="btn btn-outline-dark btn-sm" to="/profile">
+              Revisar perfil fiscal
+            </Link>
+          </div>
+
+          <div className="row g-3 mb-4">
+            <div className="col-md-4">
+              <div className="metric-box metric-box--warning">
+                <span>Vencen pronto</span>
+                <strong>{dueSoonItems.length}</strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="metric-box metric-box--warning">
+                <span>Liquidaciones de IVA</span>
+                <strong>{vatItems.length}</strong>
+              </div>
+            </div>
+            <div className="col-md-4">
+              <div className="metric-box metric-box--warning">
+                <span>Liquidaciones de IRPF</span>
+                <strong>{irpfItems.length}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-3">
+            <div className="col-12 col-lg-4">
+              <article className="entity-card entity-card--stacked h-100">
+                <h3 className="h6 mb-1">1. Validar identidad fiscal</h3>
+                <p className="mb-0 text-secondary small">
+                  Confirma que tu NIF esté correcto para que FINANCIA diferencie
+                  mejor tus facturas emitidas y derive obligaciones fiables.
+                </p>
+              </article>
+            </div>
+            <div className="col-12 col-lg-4">
+              <article className="entity-card entity-card--stacked h-100">
+                <h3 className="h6 mb-1">2. Revisar vencimientos</h3>
+                <p className="mb-0 text-secondary small">
+                  Prioriza las obligaciones con vencimiento en 30 días y usa el
+                  repositorio documental para verificar la factura origen antes
+                  del cierre.
+                </p>
+              </article>
+            </div>
+            <div className="col-12 col-lg-4">
+              <article className="entity-card entity-card--stacked h-100">
+                <h3 className="h6 mb-1">3. Simular caja anual</h3>
+                <p className="mb-0 text-secondary small">
+                  Contrasta esta carga fiscal con la simulación anual para
+                  anticipar pagos y corregir deducciones revisables.
+                </p>
+              </article>
+            </div>
+          </div>
         </div>
       </section>
 

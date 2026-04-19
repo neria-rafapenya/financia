@@ -61,6 +61,7 @@ export interface UploadDocumentInput {
     linkedEntityId?: number | null;
     instructions?: string;
     autoDetectDocumentType?: boolean;
+    manualRotationDegrees?: number;
 }
 export interface UpdateDocumentInput {
     documentId: number;

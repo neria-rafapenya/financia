@@ -11,6 +11,7 @@ import { PayersService } from "@/application/services/PayersService";
 import type {
   CreatePayerPayload,
   Payer,
+  UpdatePayerPayload,
 } from "@/domain/interfaces/payer.interface";
 import { PayersRepository } from "@/infrastructure/repositories/PayersRepository";
 import { useAuth } from "./AuthContext";
@@ -21,6 +22,8 @@ interface PayersContextValue {
   error: string | null;
   refreshPayers: () => Promise<void>;
   createPayer: (payload: CreatePayerPayload) => Promise<void>;
+  updatePayer: (payerId: number, payload: UpdatePayerPayload) => Promise<void>;
+  deletePayer: (payerId: number) => Promise<void>;
 }
 
 const payersContext = createContext<PayersContextValue | null>(null);
@@ -62,6 +65,22 @@ export function PayersProvider({ children }: Readonly<PropsWithChildren>) {
     [refreshPayers],
   );
 
+  const updatePayer = useCallback(
+    async (payerId: number, payload: UpdatePayerPayload) => {
+      await payersService.update(payerId, payload);
+      await refreshPayers();
+    },
+    [refreshPayers],
+  );
+
+  const deletePayer = useCallback(
+    async (payerId: number) => {
+      await payersService.remove(payerId);
+      await refreshPayers();
+    },
+    [refreshPayers],
+  );
+
   useEffect(() => {
     if (!auth.isInitializing && auth.isAuthenticated) {
       void refreshPayers();
@@ -73,9 +92,25 @@ export function PayersProvider({ children }: Readonly<PropsWithChildren>) {
     }
   }, [auth.isAuthenticated, auth.isInitializing, refreshPayers]);
 
-  const value = useMemo(
-    () => ({ payers, isLoading, error, refreshPayers, createPayer }),
-    [createPayer, error, isLoading, payers, refreshPayers],
+  const value = useMemo<PayersContextValue>(
+    () => ({
+      payers,
+      isLoading,
+      error,
+      refreshPayers,
+      createPayer,
+      updatePayer,
+      deletePayer,
+    }),
+    [
+      createPayer,
+      deletePayer,
+      error,
+      isLoading,
+      payers,
+      refreshPayers,
+      updatePayer,
+    ],
   );
 
   return (
